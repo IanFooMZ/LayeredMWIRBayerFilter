@@ -15,7 +15,7 @@ E_tm1 = getresult('transmission_monitor_1','E');
 E_tm2 = getresult('transmission_monitor_2','E');
 E_tm3 = getresult('transmission_monitor_3','E');
 
-E_fp0 = getresult('focal_plane','E');
+E_fp0 = getresult('transmission_focal_monitor_','E');
 
-matlabsave('trans_spec_data');
+matlabsave('transspecdata_th5_tfsf_xpol');
 }

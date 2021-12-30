@@ -1,0 +1,39 @@
+thetaOrig = 10;
+theta = 0;
+sourceType = 'tfsf';
+
+for(theta=thetaOrig-15; theta<=thetaOrig+15; theta=theta+1.25) {
+#for(theta=thetaOrig-0; theta<=thetaOrig+0; theta=theta+1.25) {
+print("theta is "+num2str(theta));
+
+    layoutStatus = layoutmode;
+    if (layoutStatus==1){
+        print("In Layout Mode. Running .fsp...");
+        }
+    else {
+        print("In Analysis Mode");
+        switchtolayout;
+        }
+    
+    select('forward_src_x_tfsf');
+    set('angle theta',theta);
+    set('z',-1.25*1e-6);
+    set('x span',33*1e-6);
+    set('y span',33*1e-6);
+    run;
+        
+    E_fm0 = getresult('focal_monitor_0','E');
+    E_fm1 = getresult('focal_monitor_1','E');
+    E_fm2 = getresult('focal_monitor_2','E');
+    E_fm3 = getresult('focal_monitor_3','E');
+    
+    E_tm0 = getresult('transmission_monitor_0','E');
+    E_tm1 = getresult('transmission_monitor_1','E');
+    E_tm2 = getresult('transmission_monitor_2','E');
+    E_tm3 = getresult('transmission_monitor_3','E');
+    
+    E_fp0 = getresult('transmission_focal_monitor_','E');
+    
+    filename = 'sortspecdata_'+sourceType+'_xpol_optang'+num2str(thetaOrig,'%.1f')+'_th'+num2str(theta,'%.2f');
+    matlabsave(filename);
+}
