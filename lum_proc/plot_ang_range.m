@@ -4,10 +4,24 @@
 % https://support.lumerical.com/hc/en-us/articles/360034409554
 % https://kx.lumerical.com/t/transforming-datasets-as-structures-to-matlab/2576/5
 clear; clc; close all;
-thetaVals = [0:2:20];
+thetaOrig = 7.5;
+% thetaVals = [thetaOrig-0:1.25:thetaOrig+20];
+thetaVals = [thetaOrig-15:1.25:thetaOrig+15];
+peakInd = find(thetaVals==thetaOrig);
+sourceType = 'tfsf';
+dp = 0;
 
-filename = 'sort_spec_data_';
-load([filename, num2str(thetaVals(1)),'.mat']);
+file{1} = [pwd,'\',num2str(thetaOrig,'%.1f'),'_inverse_design\'];
+file{2} = 'sortspecdata';
+file{4} = ['optang',num2str(thetaOrig,'%.1f'),'_th'];
+file{3} = [sourceType, '_xpol'];
+
+fn = formFileName(file,thetaOrig,dp);
+try
+    load([fn,'.mat']);
+catch ME
+    load([fn(1:end-length(file{4})-1),'.mat']);
+end
 wlVals = 1e6*E_fm0.lambda;
 
 Emag_fp0 = zeros(length(thetaVals), length(wlVals));
@@ -18,10 +32,16 @@ Emag_tm3 = Emag_fp0;
 
 for k = 1:length(thetaVals)
     theta = thetaVals(k);
-
-    filename = 'sort_spec_data_';
-    load([filename, num2str(theta),'.mat']);
-
+    if theta<0
+        fn = formFileName(file,ceil(theta),dp);
+    else
+        fn = formFileName(file,floor(theta),dp);
+    end
+    try
+        load([fn,'.mat']);
+    catch ME
+        load([fn(1:end-length(file{4})-1),'.mat']);
+    end
     wlVals = 1e6*E_fm0.lambda;
 
     %% Overall Incident Power
@@ -42,40 +62,103 @@ for k = 1:length(thetaVals)
 end
 
 
-%% Normalize by focal plane, then take Maximum along wavelength dimension, then normalize 
+%% Normalize by focal plane, then take Maximum along wavelength dimension
+%% (designed peak), then normalize 
 % Emag_tm0 = max(Emag_tm0./Emag_fp0,[],2);
 % Emag_tm1 = max(Emag_tm1./Emag_fp0,[],2);
 % Emag_tm2 = max(Emag_tm2./Emag_fp0,[],2);
 % Emag_tm3 = max(Emag_tm3./Emag_fp0,[],2);
-Emag_tm0 = findMax(Emag_tm0./Emag_fp0);
-Emag_tm1 = findMax(Emag_tm1./Emag_fp0);
-Emag_tm2 = findMax(Emag_tm2./Emag_fp0);
-Emag_tm3 = findMax(Emag_tm3./Emag_fp0);
+Emag_tm0 = findMax(Emag_tm0./Emag_fp0, peakInd);
+Emag_tm1 = findMax(Emag_tm1./Emag_fp0, peakInd);
+Emag_tm2 = findMax(Emag_tm2./Emag_fp0, peakInd);
+Emag_tm3 = findMax(Emag_tm3./Emag_fp0, peakInd);
 
-Emag_tm0 = Emag_tm0./Emag_tm0(1);
-Emag_tm1 = Emag_tm1./Emag_tm1(1);
-Emag_tm2 = Emag_tm2./Emag_tm2(1);
-Emag_tm3 = Emag_tm3./Emag_tm3(1);
+% Save to struct
+saveData = struct;
+saveData.wlVals = wlVals;
+saveData.peakInd = peakInd;
+saveData.thetaVals = thetaVals;
+saveData.thetaOrig = thetaOrig;
+saveData.Emag_fp0 = Emag_fp0;
+saveData.Emag_tm0 = Emag_tm0;
+saveData.Emag_tm1 = Emag_tm1;
+saveData.Emag_tm2 = Emag_tm2;
+saveData.Emag_tm3 = Emag_tm3;
+th7_5data = saveData; save(['ang_range_superimposed_',sourceType,'.mat'] ...
+    ,'th7_5data','-append');
 
+Emag_tm0 = Emag_tm0./Emag_tm0(peakInd);
+Emag_tm1 = Emag_tm1./Emag_tm1(peakInd);
+Emag_tm2 = Emag_tm2./Emag_tm2(peakInd);
+Emag_tm3 = Emag_tm3./Emag_tm3(peakInd);
+
+%% Make it Look Good
+dth = thetaVals(2)-thetaVals(1);
+
+Emag_tm0 = Emag_tm0./max(Emag_tm0);
+Emag_tm1 = Emag_tm1./max(Emag_tm1);
+Emag_tm2 = Emag_tm2./max(Emag_tm2);
 
 %% Plot Sorting Spectrum
 fig = figure; hold on;
-plot(thetaVals,Emag_tm0,'b','DisplayName','Blue');
-plot(thetaVals,Emag_tm1,'g','DisplayName','Green,x-pol');
-plot(thetaVals,Emag_tm2,'r','DisplayName','Red');
+xline(thetaOrig,'-','HandleVisibility','off','Color','#505050' ...
+    ,'LineWidth', 2.0);
+yline(0.5,'--','HandleVisibility','off','Color','#505050' ...
+    ,'LineWidth', 2.0);
+
+intensity = 230;
+plot(thetaVals-7*dth,Emag_tm0,'o-','Color',[0 0 intensity]./255,'DisplayName','Blue');
+plot(thetaVals-2*dth,Emag_tm1,'o-','Color',[0 intensity 0]./255,'DisplayName','Green, x-pol');
+plot(thetaVals-1*dth,Emag_tm2,'o-','Color',[intensity 0 0]./255,'DisplayName','Red');
 % plot(thetaVals,Emag_tm3,'Color',1/255*[40,94,25],'DisplayName','Green,y-pol');
 
 xlabel('Angle of Incidence (°)');
 ylabel('Sorting Efficiency (Normalized)');
+xlim([thetaVals(1) thetaVals(end)]); 
 ylim([0.4,1.05]);
-yline(0.5,'--');
-legend = legend('Location', 'northeast');
-title(['Angular Range']);
-set(gcf,'position',[361.0000  226.3333  675.3333  392.6667]);
-saveas(fig,['angular_range', '.png']);
+legend = legend('Location', 'northwest');
+title(['Angular Range: Optimized at ',num2str(thetaOrig,"%.1f"),'°']);
 
-function [Emag_processed] = findMax(Emag)
-    [a, ind] = max(Emag(1,:));
+lines = findobj(gcf,'Type','Line');
+for i = 1:numel(lines)
+  lines(i).LineWidth = 2.0;
+  lines(i).MarkerSize = 2.0;
+end
+set(findall(gcf,'-property','FontSize'),'FontSize',16)
+
+%set(gcf,'position',[361.0000  226.3333  675.3333  392.6667]);
+set(gcf,'position',[0 0 1920 1440]);
+exportgraphics(gca,['angrange_th',num2str(thetaOrig),'.png']);
+
+%% Functions
+function fn = formFileName(file,theta,dp)
+    switch dp
+        case 0
+            thetaStr = num2str(theta,'%.0f');
+        case 1
+            thetaStr = num2str(theta,'%.1f');
+        case 2
+            thetaStr = num2str(theta,'%.2f');
+        otherwise
+            thetaStr = num2str(theta,'%d');
+    end
+
+    fn = [];
+    for i = 1:length(file)
+        if file{i}(end-2:end) == '_th'
+           file{i} = [file{i},thetaStr]; 
+        end
+        
+        if i <= 2
+            fn = [fn,file{i}];
+        else
+            fn = [fn,'_',file{i}];
+        end
+    end
+end
+
+function [Emag_processed] = findMax(Emag,peakInd)
+    [a, ind] = max(Emag(peakInd,:));
     Emag_processed = Emag(:,ind);
 end
 

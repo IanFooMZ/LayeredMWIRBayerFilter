@@ -1,5 +1,5 @@
-#addtfsf();
-#set("name","forward_src_x_tfsf");
+addtfsf();
+set("name","forward_src_x_tfsf");
 set("injection axis", "z-axis");
 set("direction", "backward");
 set("x",0);

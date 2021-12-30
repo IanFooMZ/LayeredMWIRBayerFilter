@@ -4,14 +4,32 @@
 % https://support.lumerical.com/hc/en-us/articles/360034409554
 % https://kx.lumerical.com/t/transforming-datasets-as-structures-to-matlab/2576/5
 clear; clc; close all;
-thetaVals = [10];%[0:2:16];
+thetaOrig = 7.5;
+% thetaVals = [thetaOrig-0:1.25:thetaOrig+20];
+thetaVals = [thetaOrig-15:1.25:thetaOrig+15];
+peakInd = find(thetaVals==thetaOrig);
+sourceType = 'tfsf';
+dp = 0;
+
+file{1} = [pwd,'\',num2str(thetaOrig,'%.1f'),'_inverse_design\'];
+file{2} = 'sortspecdata';
+file{4} = ['optang',num2str(thetaOrig,'%.1f'),'_th'];
+file{3} = [sourceType, '_xpol'];
+
+fn = formFileName(file,thetaOrig,1);%dp);
 
 for k = [1:length(thetaVals)]
     theta = thetaVals(k);
-
-    filename = 'sort_spec_tfsf_data_th';
-    load([filename, num2str(theta),'.mat']);
-
+    if theta<0
+        fn = formFileName(file,ceil(theta),dp);
+    else
+        fn = formFileName(file,floor(theta),dp);
+    end
+    try
+        load([fn,'.mat']);
+    catch ME
+        load([fn(1:end-length(file{4})-1),'.mat']);
+    end
     wlVals = 1e6*E_fm0.lambda;
 
     %% Overall Incident Power
@@ -31,22 +49,61 @@ for k = [1:length(thetaVals)]
 
     %% Plot Sorting Spectrum
     fig = figure; hold on;
-    plot(wlVals,Emag_tm0./Emag_fp0,'b','DisplayName','Blue');
-    plot(wlVals,Emag_tm1./Emag_fp0,'g','DisplayName','Green,x-pol');
-    plot(wlVals,Emag_tm2./Emag_fp0,'r','DisplayName','Red');
-    plot(wlVals,Emag_tm3./Emag_fp0,'Color',1/255*[40,94,25],'DisplayName','Green,y-pol');
+    intensity = 230;
+    plot(wlVals,Emag_tm0./Emag_fp0,'o-','Color',[0 0 intensity]./255,'DisplayName','Blue');
+    plot(wlVals,Emag_tm1./Emag_fp0,'o-','Color',[0 intensity 0]./255,'DisplayName','Green, x-pol');
+    plot(wlVals,Emag_tm2./Emag_fp0,'o-','Color',[intensity 0 0]./255,'DisplayName','Red');
+    plot(wlVals,Emag_tm3./Emag_fp0,'Color',1/255*[40,94,25],'DisplayName','Green, y-pol');
 
     xlabel('Wavelength (um)');
     ylabel('Sorting Efficiency');
-%     ylim([0.05,0.55]);
     ylim([0.1,0.55]);
     leg = legend('Location', 'north');
-    title(['Spectrum in Each Quadrant, ',num2str(theta),'° incidence']);
-    set(gcf,'position',[361.0000  226.3333  675.3333  392.6667]);
-    saveas(fig,['sort_spec_bfast_theta', num2str(theta), '.png']);
+    title({['Spectrum in Each Quadrant'],['Incident Angle ',num2str(theta) ...
+        '°, Optimized for ',num2str(thetaOrig),'°']});
+    
+    lines = findobj(gcf,'Type','Line');
+    for i = 1:numel(lines)
+      lines(i).LineWidth = 2.0;
+      lines(i).MarkerSize = 2.0;
+    end
+    set(findall(gcf,'-property','FontSize'),'FontSize',16)
+    %set(gcf,'position',[361.0000  226.3333  675.3333  392.6667]);
+    set(gcf,'position',[0 0 1920 1440]);
+    
+    exportgraphics(gca,['sortspec_tfsf_optang', num2str(thetaOrig) ...
+        ,'_th',num2str(theta),'.png']);
     close all;
 
 end
+
+%% Functions
+function fn = formFileName(file,theta,dp)
+    switch dp
+        case 0
+            thetaStr = num2str(theta,'%.0f');
+        case 1
+            thetaStr = num2str(theta,'%.1f');
+        case 2
+            thetaStr = num2str(theta,'%.2f');
+        otherwise
+            thetaStr = num2str(theta,'%d');
+    end
+
+    fn = [];
+    for i = 1:length(file)
+        if file{i}(end-2:end) == '_th'
+           file{i} = [file{i},thetaStr]; 
+        end
+        
+        if i <= 2
+            fn = [fn,file{i}];
+        else
+            fn = [fn,'_',file{i}];
+        end
+    end
+end
+
 function [Emag_lambda] = integrateOverSpace(monitor_name,variable,theta)
     Emag = magnitudeE(monitor_name,variable);
     Emag_lambda = squeeze(sum(Emag,1));
