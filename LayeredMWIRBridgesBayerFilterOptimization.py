@@ -129,7 +129,7 @@ device_mesh['dz'] = mesh_spacing_um * 1e-6
 #
 # General polarized source information
 #
-xy_phi_rotations = [0, 90]
+xy_pol_rotations = [0, 90]
 xy_names = ['x', 'y']
 
 
@@ -149,7 +149,7 @@ def adjustGaussRefract(src_angle_incidence, src_hgt_Si, src_hgt_polymer, n_Si, n
 for xy_idx in range(0, 2):
 	# forward_src = fdtd_hook.addtfsf()
 	# forward_src['name'] = 'forward_src_' + xy_names[xy_idx]
-	# forward_src['angle phi'] = xy_phi_rotations[xy_idx]
+	# forward_src['angle phi'] = xy_pol_rotations[xy_idx]
 	# forward_src['direction'] = 'Backward'
 	# forward_src['x span'] = lateral_aperture_um * 1e-6
 	# forward_src['y span'] = lateral_aperture_um * 1e-6
@@ -158,17 +158,20 @@ for xy_idx in range(0, 2):
 	# forward_src['wavelength start'] = lambda_min_um * 1e-6
 	# forward_src['wavelength stop'] = lambda_max_um * 1e-6
 
+	adjustedRIParams = adjustGaussRefract(src_angle_incidence, src_hgt_Si,
+													src_hgt_polymer, n_Si, n_polymer)
+
 	forward_src = fdtd_hook.addgaussian()
 	forward_src['name'] = 'forward_src_'+xy_names[xy_idx]
 	forward_src['injection axis'] = 'z-axis'
 	forward_src['direction'] = 'Backward'
-	forward_src['angle phi'] = xy_phi_rotations[xy_idx]
-	forward_src['angle theta'] = adjustGaussRefract(src_angle_incidence, src_hgt_Si,
-													src_hgt_polymer, n_Si, n_polymer)[0]  # degrees
+	forward_src['polarization angle'] = xy_pol_rotations[xy_idx]	# degrees
+	forward_src['angle theta'] = adjustedRIParams[0]  # degrees
+	forward_src['angle phi'] = src_phi_incidence    # degrees
 
-	forward_src['x'] = adjustGaussRefract(src_angle_incidence, src_hgt_Si, src_hgt_polymer, n_Si, n_polymer)[1] * 1e-6
+	forward_src['x'] = adjustedRIParams[1]*np.cos(src_phi_incidence*np.pi/180) * 1e-6
 	forward_src['x span'] = lateral_aperture_um * 1e-6 * (4/3)
-	forward_src['y'] = 0
+	forward_src['y'] = adjustedRIParams[1]*np.sin(src_phi_incidence*np.pi/180) * 1e-6
 	forward_src['y span'] = lateral_aperture_um * 1e-6 * (4/3)
 	forward_src['z'] = (src_maximum_vertical_um + src_hgt_Si) * 1e-6
 	forward_src['wavelength start'] = lambda_min_um * 1e-6
@@ -198,7 +201,7 @@ for adj_src_idx in range(0, num_adjoint_sources):
 		adj_src['y'] = adjoint_y_positions_um[adj_src_idx] * 1e-6
 		adj_src['z'] = adjoint_vertical_um * 1e-6
 		adj_src['theta'] = 90
-		adj_src['phi'] = xy_phi_rotations[xy_idx]
+		adj_src['phi'] = xy_pol_rotations[xy_idx]
 		adj_src['wavelength start'] = lambda_min_um * 1e-6
 		adj_src['wavelength stop'] = lambda_max_um * 1e-6
 
@@ -457,9 +460,9 @@ def run_jobs_inner( queue_in ):
 
 ip_dip_dispersion_model = ip_dip_dispersion.IPDipDispersion()
 
-cur_design_variable = np.load( projects_directory_location + "/cur_design_variable.npy" )
-bayer_filter.w[0] = cur_design_variable
-figure_of_merit_evolution = np.load(projects_directory_location + "/figure_of_merit.npy")
+# cur_design_variable = np.load( projects_directory_location + "/cur_design_variable.npy" )
+# bayer_filter.w[0] = cur_design_variable
+# figure_of_merit_evolution = np.load(projects_directory_location + "/figure_of_merit.npy")
 # if restarting from some midpoint; uncomment these lines
 # change the start_epoch and start_iteration to whatever they were before; use the if epoch== start_epoch
 # load from figure_of_merit.npy
@@ -471,14 +474,14 @@ bayer_filter.update_permittivity()
 #
 # Run the optimization
 #
-start_epoch = 6
+start_epoch = 0
 for epoch in range(start_epoch, num_epochs):
 	bayer_filter.update_filters(epoch)
 	bayer_filter.update_permittivity()
 
 	start_iter = 0
 	if epoch == start_epoch:
-		start_iter = 12
+		start_iter = 0
 	for iteration in range(start_iter, num_iterations_per_epoch):
 		print("Working on epoch " + str(epoch) + " and iteration " + str(iteration))
 		sys.stdout.flush()
