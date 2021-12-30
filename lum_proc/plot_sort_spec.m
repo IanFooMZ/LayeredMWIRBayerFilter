@@ -4,17 +4,17 @@
 % https://support.lumerical.com/hc/en-us/articles/360034409554
 % https://kx.lumerical.com/t/transforming-datasets-as-structures-to-matlab/2576/5
 clear; clc; close all;
-thetaOrig = 7.5;
+thetaOrig = 5;
 % thetaVals = [thetaOrig-0:1.25:thetaOrig+20];
 thetaVals = [thetaOrig-15:1.25:thetaOrig+15];
 peakInd = find(thetaVals==thetaOrig);
-sourceType = 'tfsf';
+sourceConfig = 'gauss';
 dp = 0;
 
-file{1} = [pwd,'\',num2str(thetaOrig,'%.1f'),'_inverse_design\'];
+file{1} = [pwd,'\'];%,num2str(thetaOrig,'%.1f'),'_inverse_design\'];
 file{2} = 'sortspecdata';
 file{4} = ['optang',num2str(thetaOrig,'%.1f'),'_th'];
-file{3} = [sourceType, '_xpol'];
+file{3} = [sourceConfig];%, '_xpol'];
 
 fn = formFileName(file,thetaOrig,1);%dp);
 
@@ -71,7 +71,7 @@ for k = [1:length(thetaVals)]
     %set(gcf,'position',[361.0000  226.3333  675.3333  392.6667]);
     set(gcf,'position',[0 0 1920 1440]);
     
-    exportgraphics(gca,['sortspec_tfsf_optang', num2str(thetaOrig) ...
+    exportgraphics(gca,['sortspec_',sourceConfig,'_optang', num2str(thetaOrig) ...
         ,'_th',num2str(theta),'.png']);
     close all;
 

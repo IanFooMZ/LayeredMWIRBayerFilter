@@ -4,19 +4,19 @@
 % https://support.lumerical.com/hc/en-us/articles/360034409554
 % https://kx.lumerical.com/t/transforming-datasets-as-structures-to-matlab/2576/5
 clear; clc; close all;
-thetaOrig = 7.5;
+thetaOrig = 5;
 % thetaVals = [thetaOrig-0:1.25:thetaOrig+20];
 thetaVals = [thetaOrig-15:1.25:thetaOrig+15];
 peakInd = find(thetaVals==thetaOrig);
-sourceType = 'tfsf';
+sourceType = 'gauss';
 dp = 0;
 
-file{1} = [pwd,'\',num2str(thetaOrig,'%.1f'),'_inverse_design\'];
+file{1} = [pwd,'\'];%,num2str(thetaOrig,'%.1f'),'_inverse_design\'];
 file{2} = 'sortspecdata';
 file{4} = ['optang',num2str(thetaOrig,'%.1f'),'_th'];
-file{3} = [sourceType, '_xpol'];
-
+file{3} = [sourceType];%,'inSi'];%, '_xpol'];
 fn = formFileName(file,thetaOrig,dp);
+
 try
     load([fn,'.mat']);
 catch ME
@@ -84,8 +84,10 @@ saveData.Emag_tm0 = Emag_tm0;
 saveData.Emag_tm1 = Emag_tm1;
 saveData.Emag_tm2 = Emag_tm2;
 saveData.Emag_tm3 = Emag_tm3;
-th7_5data = saveData; save(['ang_range_superimposed_',sourceType,'.mat'] ...
-    ,'th7_5data','-append');
+
+idcs = strfind(pwd,'\'); mydir = pwd; newdir = mydir(1:idcs(end)-1);
+th5len40f30data = saveData; save([newdir,'\','ang_range_superimposed_',sourceType,'_Footprint.mat'] ...
+    ,'th5len40f30data','-append');
 
 Emag_tm0 = Emag_tm0./Emag_tm0(peakInd);
 Emag_tm1 = Emag_tm1./Emag_tm1(peakInd);
@@ -107,14 +109,14 @@ yline(0.5,'--','HandleVisibility','off','Color','#505050' ...
     ,'LineWidth', 2.0);
 
 intensity = 230;
-plot(thetaVals-7*dth,Emag_tm0,'o-','Color',[0 0 intensity]./255,'DisplayName','Blue');
-plot(thetaVals-2*dth,Emag_tm1,'o-','Color',[0 intensity 0]./255,'DisplayName','Green, x-pol');
-plot(thetaVals-1*dth,Emag_tm2,'o-','Color',[intensity 0 0]./255,'DisplayName','Red');
+plot(thetaVals-0*dth,Emag_tm0,'o-','Color',[0 0 intensity]./255,'DisplayName','Blue');
+plot(thetaVals-1*dth,Emag_tm1,'o-','Color',[0 intensity 0]./255,'DisplayName','Green, x-pol');
+plot(thetaVals+0*dth,Emag_tm2,'o-','Color',[intensity 0 0]./255,'DisplayName','Red');
 % plot(thetaVals,Emag_tm3,'Color',1/255*[40,94,25],'DisplayName','Green,y-pol');
 
 xlabel('Angle of Incidence (°)');
 ylabel('Sorting Efficiency (Normalized)');
-xlim([thetaVals(1) thetaVals(end)]); 
+xlim([thetaVals(2) thetaVals(end-1)]); 
 ylim([0.4,1.05]);
 legend = legend('Location', 'northwest');
 title(['Angular Range: Optimized at ',num2str(thetaOrig,"%.1f"),'°']);
