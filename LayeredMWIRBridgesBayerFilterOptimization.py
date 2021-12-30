@@ -133,20 +133,35 @@ xy_names = ['x', 'y']
 
 
 #
-# Add a TFSF forward source at normal incidence
+# Add a BFAST plane wave forward source at oblique (angled) incidence
 #
-
 forward_sources = []
 
 for xy_idx in range(0, 2):
-	forward_src = fdtd_hook.addtfsf()
+	# forward_src = fdtd_hook.addtfsf()
+	# forward_src['name'] = 'forward_src_' + xy_names[xy_idx]
+	# forward_src['angle phi'] = xy_phi_rotations[xy_idx]
+	# forward_src['direction'] = 'Backward'
+	# forward_src['x span'] = lateral_aperture_um * 1e-6
+	# forward_src['y span'] = lateral_aperture_um * 1e-6
+	# forward_src['z max'] = src_maximum_vertical_um * 1e-6
+	# forward_src['z min'] = src_minimum_vertical_um * 1e-6
+	# forward_src['wavelength start'] = lambda_min_um * 1e-6
+	# forward_src['wavelength stop'] = lambda_max_um * 1e-6
+
+	forward_src = fdtd_hook.addplane()
 	forward_src['name'] = 'forward_src_' + xy_names[xy_idx]
-	forward_src['angle phi'] = xy_phi_rotations[xy_idx]
+	forward_src['amplitude'] = 1
+	forward_src['plane wave type'] = 'BFAST'
 	forward_src['direction'] = 'Backward'
-	forward_src['x span'] = lateral_aperture_um * 1e-6
-	forward_src['y span'] = lateral_aperture_um * 1e-6
-	forward_src['z max'] = src_maximum_vertical_um * 1e-6
-	forward_src['z min'] = src_minimum_vertical_um * 1e-6
+	forward_src['angle theta'] = src_angle_incidence # degrees
+	forward_src['angle phi'] = xy_phi_rotations[xy_idx]
+
+	forward_src['x'] = 0
+	forward_src['x span'] = lateral_aperture_um * 1e-6 * 1.5
+	forward_src['y'] = 0
+	forward_src['y span'] = lateral_aperture_um * 1e-6 * 1.5
+	forward_src['z'] = src_maximum_vertical_um * 1e-6    # here z = z_max of the original so as to be at the top
 	forward_src['wavelength start'] = lambda_min_um * 1e-6
 	forward_src['wavelength stop'] = lambda_max_um * 1e-6
 

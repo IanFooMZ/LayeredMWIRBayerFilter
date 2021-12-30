@@ -8,6 +8,6 @@
 
 source activate fdtd
 
-xvfb-run --server-args="-screen 0 1280x1024x24" python LayeredMWIRBridgesBayerFilterOptimization.py 7 > stdout_mwir_n.log 2> stderr_mwir_n.log
+xvfb-run --server-args="-screen 0 1280x1024x24" python LayeredMWIRBridgesBayerFilterOptimization.py 7 > stdout_mwir_a10.log 2> stderr_mwir_a10.log
 
 exit $?
