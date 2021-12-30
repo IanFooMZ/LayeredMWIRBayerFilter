@@ -10,6 +10,7 @@ import networkx as nx
 import numpy as np
 
 import time
+import sys
 
 from LayeredMWIRBridgesBayerFilterParameters import *
 
@@ -222,6 +223,7 @@ class LayeredMWIRBridgesBayerFilter(device.Device):
 		print(var2.dtype)
 		var3 = self.max_blur_xy_2.fabricate(var2)
 		var4 = self.sigmoid_3.fabricate(var3)
+		sys.stdout.flush()
 		return var4
 
 	#
@@ -357,6 +359,7 @@ class LayeredMWIRBridgesBayerFilter(device.Device):
 		print("To patch all of the topology took " + str( topological_patch_elapsed ) + " seconds")
 		print("The current number of total solid components is " + str( num_solid_labels ) )
 		print("The current number of total void components is " + str( num_void_labels ) )
+		sys.stdout.flush()
 
 		for layer in range( 0, self.layering_z_1.num_layers ):
 			get_layer_idx = get_layer_idxs[ layer ]
@@ -365,7 +368,9 @@ class LayeredMWIRBridgesBayerFilter(device.Device):
 
 			print("The current number of solid components on layer " + str( layer ) + " is " + str( num_solid_labels ) )
 			print("The current number of void components on layer " + str( layer ) + " is " + str( num_void_labels ) )
+			sys.stdout.flush()
 		print("\n\n")
+		sys.stdout.flush()
 
 		self.restrictions[ 0 : blur_half_width_voxels, :, : ] = 0
 		self.restrictions[ :, 0 : blur_half_width_voxels, : ] = 0

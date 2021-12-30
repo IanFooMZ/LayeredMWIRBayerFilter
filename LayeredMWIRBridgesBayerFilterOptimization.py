@@ -10,7 +10,7 @@ import ip_dip_dispersion
 
 
 import imp
-imp.load_source( "lumapi", "/central/home/ifoo/lumerical/2020a_r7/api/python/lumapi.py")
+imp.load_source( "lumapi", "/central/home/ifoo/lumerical/2020a_r6/api/python/lumapi.py")
 
 import lumapi
 
@@ -28,6 +28,7 @@ import platform
 import re
 
 print("All modules loaded.")
+sys.stdout.flush()
 
 def get_slurm_node_list( slurm_job_env_variable=None ):
 	if slurm_job_env_variable is None:
@@ -367,7 +368,7 @@ def get_monitor_data(monitor_name, monitor_field):
 	# end_time = time.time()
 
 	# print("\nIt took " + str(end_time - start_time) + " seconds to transfer the monitor data\n")
-
+	# sys.stdout.flush()
 	return monitor_data
 
 def get_complex_monitor_data(monitor_name, monitor_field):
@@ -441,8 +442,9 @@ def run_jobs_inner( queue_in ):
 
 ip_dip_dispersion_model = ip_dip_dispersion.IPDipDispersion()
 
-# cur_design_variable = np.load( projects_directory_location + "/cur_design_variable.npy" )
-# bayer_filter.w[0] = cur_design_variable
+cur_design_variable = np.load( projects_directory_location + "/cur_design_variable.npy" )
+bayer_filter.w[0] = cur_design_variable
+figure_of_merit_evolution = np.load(projects_directory_location + "/figure_of_merit.npy")
 # if restarting from some midpoint; uncomment these lines
 # change the start_epoch and start_iteration to whatever they were before; use the if epoch== start_epoch
 # load from figure_of_merit.npy
@@ -454,16 +456,17 @@ bayer_filter.update_permittivity()
 #
 # Run the optimization
 #
-start_epoch = 0
+start_epoch = 8
 for epoch in range(start_epoch, num_epochs):
 	bayer_filter.update_filters(epoch)
 	bayer_filter.update_permittivity()
 
 	start_iter = 0
 	if epoch == start_epoch:
-		start_iter = 18
+		start_iter = 11
 	for iteration in range(start_iter, num_iterations_per_epoch):
 		print("Working on epoch " + str(epoch) + " and iteration " + str(iteration))
+		sys.stdout.flush()
 
 		job_names = {}
 
@@ -604,6 +607,8 @@ for epoch in range(start_epoch, num_epochs):
 				# This is ok because we are only going to be using the spectral idx corresponding to this range in teh summation below
 				#
 				fdtd_hook.load( job_names[ ( 'adjoint', adj_src_idx, xy_idx, lookup_dispersive_range_idx ) ] )
+				print('Loading .fsp file: '+job_names[('adjoint', adj_src_idx, xy_idx, lookup_dispersive_range_idx)])
+				sys.stdout.flush()
 
 				adjoint_e_fields.append(
 					get_complex_monitor_data(design_efield_monitor['name'], 'E'))
