@@ -193,19 +193,19 @@ class LayeredMWIRBridgesBayerFilter(device.Device):
 	def update_permittivity(self):
 		var0 = self.w[0]
 
-		var1 = self.sigmoid_0.forward(var0)
+		var1 = self.sigmoid_0.forward(var0) # binarization
 		self.w[1] = var1
 
-		var2 = self.layering_z_1.forward(var1)
+		var2 = self.layering_z_1.forward(var1) # device must have distinct layers
 		self.w[2] = var2
 
-		var3 = self.max_blur_xy_2.forward(var2)
+		var3 = self.max_blur_xy_2.forward(var2) # feature size
 		self.w[3] = var3
 
-		var4 = self.sigmoid_3.forward(var3)
+		var4 = self.sigmoid_3.forward(var3) # snap the blurs to another binary device
 		self.w[4] = var4
 
-		var5 = self.scale_4.forward(var4)
+		var5 = self.scale_4.forward(var4) # variable btwn 0-1 to variable btwn min-max
 		self.w[5] = var5
 
 

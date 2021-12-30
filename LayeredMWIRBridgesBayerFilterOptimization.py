@@ -10,7 +10,8 @@ import ip_dip_dispersion
 
 
 import imp
-imp.load_source( "lumapi", "/central/home/gdrobert/Develompent/lumerical/2020a_r6/api/python/lumapi.py" )
+imp.load_source( "lumapi", "/central/home/ifoo/lumerical/2020a_r7/api/python/lumapi.py")
+
 import lumapi
 
 import functools
@@ -26,6 +27,7 @@ import platform
 
 import re
 
+print("All modules loaded.")
 
 def get_slurm_node_list( slurm_job_env_variable=None ):
 	if slurm_job_env_variable is None:
@@ -76,7 +78,7 @@ python_src_directory = os.path.abspath(os.path.join(os.path.dirname(__file__), '
 # projects_directory_location = os.path.abspath(os.path.join(os.path.dirname(__file__), '../projects/'))
 # projects_directory_location += "/" + project_name
 
-projects_directory_location = "/central/groups/Faraon_Computing/projects" 
+projects_directory_location = "/central/groups/Faraon_Computing/ian" 
 projects_directory_location += "/" + project_name# + '_parallel'
 
 
@@ -86,7 +88,11 @@ if not os.path.isdir(projects_directory_location):
 fdtd_hook.newproject()
 fdtd_hook.save(projects_directory_location + "/optimization")
 
-shutil.copy2(python_src_directory + "/LayeredMWIRBridgesBayerFilterParameters.py", projects_directory_location + "/ArchiveLayeredMWIRBridgesBayerFilterParameters.py")
+# shutil.copy2(python_src_directory + "/LayeredMWIRBridgesBayerFilterParameters.py", projects_directory_location + "/ArchiveLayeredMWIRBridgesBayerFilterParameters.py")
+
+shutil.copy2(python_src_directory + "/LayeredMWIRBridgesBayerFilterParameters.py", projects_directory_location + "/LayeredMWIRBridgesBayerFilterParameters.py")
+shutil.copy2(python_src_directory + "/LayeredMWIRBridgesBayerFilter.py", projects_directory_location + "/LayeredMWIRBridgesBayerFilter.py")
+shutil.copy2(python_src_directory + "/LayeredMWIRBridgesBayerFilterOptimization.py", projects_directory_location + "/LayeredMWIRBridgesBayerFilterOptimization.py")
 
 #
 # Set up the FDTD region and mesh
@@ -96,15 +102,28 @@ fdtd['x span'] = fdtd_region_size_lateral_um * 1e-6
 fdtd['y span'] = fdtd_region_size_lateral_um * 1e-6
 fdtd['z max'] = fdtd_region_maximum_vertical_um * 1e-6
 fdtd['z min'] = fdtd_region_minimum_vertical_um * 1e-6
-fdtd['mesh type'] = 'uniform'
-fdtd['define x mesh by'] = 'number of mesh cells'
-fdtd['define y mesh by'] = 'number of mesh cells'
-fdtd['define z mesh by'] = 'number of mesh cells'
-fdtd['mesh cells x'] = fdtd_region_minimum_lateral_voxels
-fdtd['mesh cells y'] = fdtd_region_minimum_lateral_voxels
-fdtd['mesh cells z'] = fdtd_region_minimum_vertical_voxels
+# fdtd['mesh type'] = 'uniform'
+# fdtd['define x mesh by'] = 'number of mesh cells'
+# fdtd['define y mesh by'] = 'number of mesh cells'
+# fdtd['define z mesh by'] = 'number of mesh cells'
+# fdtd['mesh cells x'] = fdtd_region_minimum_lateral_voxels
+# fdtd['mesh cells y'] = fdtd_region_minimum_lateral_voxels
+# fdtd['mesh cells z'] = fdtd_region_minimum_vertical_voxels
 fdtd['simulation time'] = fdtd_simulation_time_fs * 1e-15
 fdtd['background index'] = background_index
+
+device_mesh = fdtd_hook.addmesh()
+device_mesh['name'] = 'device_mesh'
+device_mesh['x'] = 0
+device_mesh['x span'] = fdtd_region_size_lateral_um * 1e-6
+device_mesh['y'] = 0
+device_mesh['y span'] = fdtd_region_size_lateral_um * 1e-6
+device_mesh['z max'] = ( device_vertical_maximum_um + 0.5 ) * 1e-6
+device_mesh['z min'] = ( device_vertical_minimum_um - 0.5 ) * 1e-6
+device_mesh['dx'] = mesh_spacing_um * 1e-6
+device_mesh['dy'] = mesh_spacing_um * 1e-6
+device_mesh['dz'] = mesh_spacing_um * 1e-6
+
 
 #
 # General polarized source information
@@ -114,8 +133,9 @@ xy_names = ['x', 'y']
 
 
 #
-# Add a TFSF plane wave forward source at normal incidence
+# Add a TFSF forward source at normal incidence
 #
+
 forward_sources = []
 
 for xy_idx in range(0, 2):
@@ -192,6 +212,39 @@ for adj_src in range(0, num_adjoint_sources):
 	focal_monitor['frequency points'] = num_design_frequency_points
 
 	focal_monitors.append(focal_monitor)
+
+transmission_monitors = []
+
+for adj_src in range(0, num_adjoint_sources):
+	transmission_monitor = fdtd_hook.addpower()
+	transmission_monitor['name'] = 'transmission_monitor_' + str(adj_src)
+	transmission_monitor['monitor type'] = '2D Z-normal'
+	transmission_monitor['x'] = adjoint_x_positions_um[adj_src] * 1e-6
+	transmission_monitor['x span'] = 0.5 * device_size_lateral_um * 1e-6
+	transmission_monitor['y'] = adjoint_y_positions_um[adj_src] * 1e-6
+	transmission_monitor['y span'] = 0.5 * device_size_lateral_um * 1e-6
+	transmission_monitor['z'] = adjoint_vertical_um * 1e-6
+	transmission_monitor['override global monitor settings'] = 1
+	transmission_monitor['use wavelength spacing'] = 1
+	transmission_monitor['use source limits'] = 1
+	transmission_monitor['frequency points'] = num_design_frequency_points
+
+	transmission_monitors.append(transmission_monitor)
+
+
+transmission_monitor_focal = fdtd_hook.addpower()
+transmission_monitor_focal['name'] = 'transmission_focal_monitor_'
+transmission_monitor_focal['monitor type'] = '2D Z-normal'
+transmission_monitor_focal['x'] = 0 * 1e-6
+transmission_monitor_focal['x span'] = device_size_lateral_um * 1e-6
+transmission_monitor_focal['y'] = 0 * 1e-6
+transmission_monitor_focal['y span'] = device_size_lateral_um * 1e-6
+transmission_monitor_focal['z'] = adjoint_vertical_um * 1e-6
+transmission_monitor_focal['override global monitor settings'] = 1
+transmission_monitor_focal['use wavelength spacing'] = 1
+transmission_monitor_focal['use source limits'] = 1
+
+transmission_monitor_focal['frequency points'] = num_design_frequency_points
 
 #
 # Add a block of polymer at the top where the device will be adhered to a Silicon substrate
@@ -373,8 +426,14 @@ def run_jobs_inner( queue_in ):
 
 ip_dip_dispersion_model = ip_dip_dispersion.IPDipDispersion()
 
-cur_design_variable = np.load( projects_directory_location + "/cur_design_variable.npy" )
-bayer_filter.w[0] = cur_design_variable
+# cur_design_variable = np.load( projects_directory_location + "/cur_design_variable.npy" )
+# bayer_filter.w[0] = cur_design_variable
+# if restarting from some midpoint; uncomment these lines
+# change the start_epoch and start_iteration to whatever they were before; use the if epoch== start_epoch
+# load from figure_of_merit.npy
+# remember to save figure_of_merit and figure_of_merit_by_wl.npy as other files
+# if you want to be very safe, save the cur_design_variable to something else 
+
 bayer_filter.update_permittivity()
 
 #
@@ -387,7 +446,7 @@ for epoch in range(start_epoch, num_epochs):
 
 	start_iter = 0
 	if epoch == start_epoch:
-		start_iter = 20
+		start_iter = 18
 	for iteration in range(start_iter, num_iterations_per_epoch):
 		print("Working on epoch " + str(epoch) + " and iteration " + str(iteration))
 
@@ -401,29 +460,24 @@ for epoch in range(start_epoch, num_epochs):
 		# that you can input a different index into each of those cubes.  Further note that the polymer slab needs to also change index when
 		# the cube index changes.
 		#
-		for dispersive_range_idx in range(0, num_dispersive_ranges ):    # index range we are in
-			# average permittivity across that range (specified by lower and upper wavelength in that range)
+		for dispersive_range_idx in range( 0, num_dispersive_ranges ):
 			dispersive_max_permittivity = ip_dip_dispersion_model.average_permittivity( dispersive_ranges_um[ dispersive_range_idx ] )
-			# convert that to an index
 			disperesive_max_index = ip_dip_dispersion.index_from_permittivity( dispersive_max_permittivity )
 
 			fdtd_hook.switchtolayout()
 
-			# set platform to have that index
 			platform_index[ : ] = disperesive_max_index
 
 			fdtd_hook.select( 'permittivity_layer_substrate' )
 			fdtd_hook.importnk2( platform_index, platform_x_range, platform_y_range, platform_z_range )
 
-			# scale index from bayer filter model from 0-1 to an actual index > 1
 			cur_permittivity = min_device_permittivity + ( dispersive_max_permittivity - min_device_permittivity ) * cur_density
 			cur_index = ip_dip_dispersion.index_from_permittivity( cur_permittivity )
 
-			# import index into region
 			fdtd_hook.select( 'design_import' )
 			fdtd_hook.importnk2( cur_index, bayer_filter_region_x, bayer_filter_region_y, bayer_filter_region_z )
 
-			# here we can set up jobs that have all the correct forward and adjoint sources enabled
+
 			for xy_idx in range(0, 2):
 				disable_all_sources()
 

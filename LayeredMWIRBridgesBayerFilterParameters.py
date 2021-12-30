@@ -7,7 +7,10 @@ import numpy as np
 #
 # Files
 #
-project_name = 'layered_mwir_2d_lithography_bridges_rgb_10layers_3p5to5p5um_si_fixed_step_addcage_25x25x25um_f30um'
+# project_name = 'layered_mwir_2d_lithography_bridges_rgb_10layers_3p5to5p5um_si_fixed_step_addcage_25x25x25um_f30um'
+# project_name = 'layered_mwir_2d_lithography_bridges_rgb_10layers_3p5to5p5um_si_fixed_step_addcage_25x25x25um_f30um'
+# project_name = 'layered_mwir_2d_lithography_bridges_rgb_10layers_3p5to5p5um_si_fixed_step_addcage_30x30x25um_f30um'
+project_name = 'angled_incidence_0deg_layered_mwir_2dlitho_bridges_rgb_10layers_3p5to5p5um_si_fixed_step_addcage_30x30x25um_f30um'
 
 # todo(gdrobert): consider the contrast here like you are doing in the cmos designs.. minimize energy into wrong quadrant
 
@@ -32,11 +35,13 @@ focal_plane_center_vertical_um = -focal_length_um
 #
 mesh_spacing_um = 0.25
 
-device_size_lateral_um = 25
+device_size_lateral_um = 30#25
 device_size_verical_um = 25
 
 device_voxels_lateral = 1 + int(device_size_lateral_um / mesh_spacing_um)
-device_voxels_vertical = 1 + int(device_size_verical_um / mesh_spacing_um)
+# todo: fix!
+# device_voxels_vertical = 1 + int(device_size_verical_um / mesh_spacing_um)
+device_voxels_vertical = 2 + int(device_size_verical_um / mesh_spacing_um)
 
 device_vertical_maximum_um = device_size_verical_um
 device_vertical_minimum_um = 0
@@ -58,7 +63,7 @@ lambda_values_um = np.linspace(lambda_min_um, lambda_max_um, num_design_frequenc
 max_intensity_by_wavelength = (device_size_lateral_um**2)**2 / (focal_length_um**2 * lambda_values_um**2)
 
 
-num_dispersive_ranges = 3
+num_dispersive_ranges = 1
 dispersive_range_size_um = bandwidth_um / num_dispersive_ranges
 
 dispersive_ranges_um = [
@@ -97,6 +102,7 @@ fdtd_simulation_time_fs = 3000
 lateral_aperture_um = 1.1 * device_size_lateral_um
 src_maximum_vertical_um = device_size_verical_um + vertical_gap_size_um * 2. / 3.
 src_minimum_vertical_um = -focal_length_um - 0.5 * vertical_gap_size_um
+src_angle_incidence = 0 # degrees
 
 assert ( src_maximum_vertical_um + 1 ) < ( fdtd_region_maximum_vertical_um - silicon_thickness_um ), "The source is in the silicon"
 
@@ -125,17 +131,28 @@ num_adjoint_sources = num_focal_spots
 adjoint_x_positions_um = [device_size_lateral_um / 4., -device_size_lateral_um / 4., -device_size_lateral_um / 4., device_size_lateral_um / 4.]
 adjoint_y_positions_um = [device_size_lateral_um / 4., device_size_lateral_um / 4., -device_size_lateral_um / 4., -device_size_lateral_um / 4.]
 
+# dispersive_range_to_adjoint_src_map = [
+	# [ 0 ],
+	# [ 1, 3 ],
+	# [ 2 ]
+# ]
+
+# adjoint_src_to_dispersive_range_map = [
+	# 0,
+	# 1,
+	# 2,
+	# 1
+# ]
+
 dispersive_range_to_adjoint_src_map = [
-	[ 0 ],
-	[ 1, 3 ],
-	[ 2 ]
+	[ 0, 1, 2, 3 ]
 ]
 
 adjoint_src_to_dispersive_range_map = [
 	0,
-	1,
-	2,
-	1
+	0,
+	0,
+	0
 ]
 
 
