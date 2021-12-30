@@ -4,23 +4,11 @@ phiOrig = 180;
 phi = phiOrig;
 sourceType = 'gauss';
     
-
-select('transmission_focal_monitor_'); copy;
-select('transmission_focal_monitor__1');
-set('name','incident_plane_monitor');
-set('z',25.3e-6);
-
-select('focal_monitor_0'); copy;
-select('focal_monitor_0_1');
-set('name','incident_point_monitor');
-set('z',25.3e-6);
-set('x',0);set('y',0);
-
-
-# for(theta=thetaOrig; theta<=thetaOrig+30; theta=theta+0.625) {
-# for(theta=thetaOrig-15; theta<=thetaOrig+15; theta=theta+0.625) {
-for(theta=thetaOrig-90; theta<=thetaOrig-90; theta=theta+0.625) {
-    print("theta is "+num2str(theta));
+	
+# for(phi=phiOrig; phi<=phiOrig+360; phi=phi+30) {
+# for(phi=phiOrig-180; phi<=phiOrig+180; phi=phi+30) {
+for(phi=phiOrig-45; phi<=phiOrig-45; phi=phi+0.625) {
+    print("phi is "+num2str(phi));
     
     layoutStatus = layoutmode;
     if (layoutStatus==1){
@@ -46,9 +34,6 @@ for(theta=thetaOrig-90; theta<=thetaOrig-90; theta=theta+0.625) {
     #set('x span',33*1e-6);
     #set('y span',33*1e-6);
     run;
-    
-    E_im0 = getresult('incident_point_monitor','E');
-    E_ip0 = getresult('incident_plane_monitor','E');
         
     E_fm0 = getresult('focal_monitor_0','E');
     E_fm1 = getresult('focal_monitor_1','E');
@@ -62,6 +47,6 @@ for(theta=thetaOrig-90; theta<=thetaOrig-90; theta=theta+0.625) {
     
     E_fp0 = getresult('transmission_focal_monitor_','E');
     
-    filename = 'sortspecdata_'+sourceType+'_optang'+num2str(thetaOrig,'%.1f')+'_th'+num2str(theta,'%.3f')+'.';
+    filename = 'sortspecdata_'+sourceType+'_optang'+num2str(phiOrig,'%.1f')+'_phi'+num2str(phi,'%.3f')+'.';
     matlabsave(filename);
 }
