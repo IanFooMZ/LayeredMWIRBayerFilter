@@ -130,14 +130,21 @@ device_mesh['dz'] = mesh_spacing_um * 1e-6
 # General polarized source information
 #
 xy_phi_rotations = [0, 90]
-xy_phi_rotations = [b + src_phi_incidence for b in xy_phi_rotations]
 xy_names = ['x', 'y']
 
 
 #
-# Add a BFAST plane wave forward source at oblique (angled) incidence
+# Add a Gaussian wave forward source at oblique (angled) incidence
 #
 forward_sources = []
+
+def adjustGaussRefract(src_angle_incidence, src_hgt_Si, src_hgt_polymer, n_Si, n_polymer):
+	x_offset = src_hgt_polymer * np.tan(src_angle_incidence*np.pi/180)
+	sin_th_prime = n_polymer/n_Si * np.sin(src_angle_incidence*np.pi/180)
+	x_offset = x_offset + src_hgt_Si*sin_th_prime/np.sqrt(1-sin_th_prime**2)
+	input_theta = np.arcsin(sin_th_prime) * 180/np.pi
+
+	return [input_theta, x_offset]
 
 for xy_idx in range(0, 2):
 	# forward_src = fdtd_hook.addtfsf()
@@ -151,21 +158,28 @@ for xy_idx in range(0, 2):
 	# forward_src['wavelength start'] = lambda_min_um * 1e-6
 	# forward_src['wavelength stop'] = lambda_max_um * 1e-6
 
-	forward_src = fdtd_hook.addplane()
-	forward_src['name'] = 'forward_src_' + xy_names[xy_idx]
-	forward_src['amplitude'] = 1
-	forward_src['plane wave type'] = 'BFAST'
+	forward_src = fdtd_hook.addgaussian()
+	forward_src['name'] = 'forward_src_'+xy_names[xy_idx]
+	forward_src['injection axis'] = 'z-axis'
 	forward_src['direction'] = 'Backward'
-	forward_src['angle theta'] = src_angle_incidence # degrees
 	forward_src['angle phi'] = xy_phi_rotations[xy_idx]
+	forward_src['angle theta'] = adjustGaussRefract(src_angle_incidence, src_hgt_Si,
+													src_hgt_polymer, n_Si, n_polymer)[0]  # degrees
 
-	forward_src['x'] = 0
-	forward_src['x span'] = lateral_aperture_um * 1e-6 * 1.5
+	forward_src['x'] = adjustGaussRefract(src_angle_incidence, src_hgt_Si, src_hgt_polymer, n_Si, n_polymer)[1] * 1e-6
+	forward_src['x span'] = lateral_aperture_um * 1e-6 * (4/3)
 	forward_src['y'] = 0
-	forward_src['y span'] = lateral_aperture_um * 1e-6 * 1.5
-	forward_src['z'] = src_maximum_vertical_um * 1e-6    # here z = z_max of the original so as to be at the top
+	forward_src['y span'] = lateral_aperture_um * 1e-6 * (4/3)
+	forward_src['z'] = (src_maximum_vertical_um + src_hgt_Si) * 1e-6
 	forward_src['wavelength start'] = lambda_min_um * 1e-6
 	forward_src['wavelength stop'] = lambda_max_um * 1e-6
+
+	forward_src["frequency dependent profile"] = 1
+	forward_src["number of field profile samples"] = 150
+	forward_src['beam parameters'] = 'Beam size and divergence angle'
+	forward_src['beam radius wz'] = 100*1e-6
+	forward_src['divergence angle'] = 2 # degrees
+	forward_src['beam radius wz'] = 11.374*1e-6
 
 	forward_sources.append(forward_src)
 
@@ -457,14 +471,14 @@ bayer_filter.update_permittivity()
 #
 # Run the optimization
 #
-start_epoch = 8
+start_epoch = 6
 for epoch in range(start_epoch, num_epochs):
 	bayer_filter.update_filters(epoch)
 	bayer_filter.update_permittivity()
 
 	start_iter = 0
 	if epoch == start_epoch:
-		start_iter = 17
+		start_iter = 12
 	for iteration in range(start_iter, num_iterations_per_epoch):
 		print("Working on epoch " + str(epoch) + " and iteration " + str(iteration))
 		sys.stdout.flush()
