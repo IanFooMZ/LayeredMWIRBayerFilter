@@ -1,9 +1,11 @@
-thetaOrig = 10;
+thetaOrig = 5;
 theta = 0;
-sourceType = 'bfast';
+phiOrig = 0;
+phi = phiOrig;
+sourceType = 'gauss';
 
-for(theta=thetaOrig-15; theta<=thetaOrig+15; theta=theta+1.25) {
-#for(theta=thetaOrig-0; theta<=thetaOrig+0; theta=theta+1.25) {
+#for(theta=thetaOrig-15; theta<=thetaOrig+15; theta=theta+0.625) {
+for(theta=thetaOrig-0; theta<=thetaOrig+0; theta=theta+0.625) {
 print("theta is "+num2str(theta));
 
     layoutStatus = layoutmode;
@@ -14,12 +16,21 @@ print("theta is "+num2str(theta));
         print("In Analysis Mode");
         switchtolayout;
         }
+        
+    sin_th_prime = 1.5/3.43*sin(theta*pi/180);
+    offset = 11.5*tan(theta*pi/180);
+    offset = offset+1.7*sin_th_prime/sqrt(1-sin_th_prime^2);
+    xOffset = offset*cos(phi*pi/180);
+    yOffset = offset*sin(phi*pi/180);
     
     select('forward_src_x');
-    set('angle theta',theta);
-    set('z',36.5*1e-6);
-    set('x span',76*1e-6);
-    set('y span',76*1e-6);
+    set('angle theta',asin(sin_th_prime)*180/pi);
+    set('angle phi',phi);
+    set('x',xOffset*1e-6);
+    set('y',yOffset*1e-6);
+    #set('z',-1.25*1e-6);
+    #set('x span',33*1e-6);
+    #set('y span',33*1e-6);
     run;
         
     E_fm0 = getresult('focal_monitor_0','E');
@@ -34,6 +45,6 @@ print("theta is "+num2str(theta));
     
     E_fp0 = getresult('transmission_focal_monitor_','E');
     
-    filename = 'sortspecdata_'+sourceType+'_xpol_optang'+num2str(thetaOrig,'%.1f')+'_th'+num2str(theta,'%.2f');
+    filename = 'sortspecdata_'+sourceType+'_optang'+num2str(thetaOrig,'%.1f')+'_th'+num2str(theta,'%.2f');
     matlabsave(filename);
 }

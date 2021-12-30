@@ -1,0 +1,19 @@
+addgaussian();
+set("name","forward_src_y_2");
+set("injection axis", "z-axis");
+set("direction", "backward");
+set("angle theta", 15);
+set("x",0);
+set("x span",33*1e-6);
+set("y",0);
+set("y span",33*1e-6);
+set("z",36.3*1e-6);
+set("wavelength start", 3.5*1e-6);
+set("wavelength stop", 5.5*1e-6);
+
+set("frequency dependent profile",1);
+set("number of field profile samples",150);
+set("beam parameters", 'Beam size and divergence angle');
+set('beam radius wz', 100e-6);
+set('divergence angle', 2);
+set('beam radius wz', 11.374e-6);

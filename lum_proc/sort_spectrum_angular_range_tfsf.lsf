@@ -1,9 +1,10 @@
-thetaOrig = 5;
+thetaOrig = 2.5;
 theta = 0;
 sourceType = 'tfsf';
 
+#for(theta=thetaOrig-7.5; theta<=thetaOrig+7.5; theta=theta+2.5) {
 for(theta=thetaOrig-0; theta<=thetaOrig+0; theta=theta+1.25) {
-print("theta is"+num2str(theta));
+print("theta is "+num2str(theta));
 
     layoutStatus = layoutmode;
     if (layoutStatus==1){
@@ -33,5 +34,6 @@ print("theta is"+num2str(theta));
     
     E_fp0 = getresult('transmission_focal_monitor_','E');
     
-    matlabsave('sortspecdata_optang'+num2str(thetaOrig,"%.2f")+'_th'+num2str(theta,"%.2f")+'_'+sourceType+'_xpol');
+    filename = 'sortspecdata_'+sourceType+'_phi2.5_optang'+num2str(thetaOrig,'%.1f')+'_th'+num2str(theta,'%.2f');
+    matlabsave(filename);
 }

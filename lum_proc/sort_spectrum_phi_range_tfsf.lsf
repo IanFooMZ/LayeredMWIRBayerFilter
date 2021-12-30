@@ -1,10 +1,10 @@
-thetaOrig = 10;
-theta = 0;
-sourceType = 'bfast';
+phiOrig = 45;
+phi = 0;
+sourceType = 'tfsf';
 
-for(theta=thetaOrig-15; theta<=thetaOrig+15; theta=theta+1.25) {
-#for(theta=thetaOrig-0; theta<=thetaOrig+0; theta=theta+1.25) {
-print("theta is "+num2str(theta));
+#for(phi=phiOrig-45; phi<=phiOrig+45; phi=phi+45) {
+for(phi=phiOrig-0; phi<=phiOrig+0; phi=phi+45) {
+print("phi is "+num2str(phi));
 
     layoutStatus = layoutmode;
     if (layoutStatus==1){
@@ -15,11 +15,11 @@ print("theta is "+num2str(theta));
         switchtolayout;
         }
     
-    select('forward_src_x');
-    set('angle theta',theta);
-    set('z',36.5*1e-6);
-    set('x span',76*1e-6);
-    set('y span',76*1e-6);
+    select('forward_src_x_tfsf');
+    set('angle phi',phi);
+    set('z',-1.25*1e-6);
+    set('x span',33*1e-6);
+    set('y span',33*1e-6);
     run;
         
     E_fm0 = getresult('focal_monitor_0','E');
@@ -34,6 +34,6 @@ print("theta is "+num2str(theta));
     
     E_fp0 = getresult('transmission_focal_monitor_','E');
     
-    filename = 'sortspecdata_'+sourceType+'_xpol_optang'+num2str(thetaOrig,'%.1f')+'_th'+num2str(theta,'%.2f');
+    filename = 'sortspecdata_'+sourceType+'_th2.5_optang'+num2str(phiOrig,'%.1f')+'_ph'+num2str(phi,'%.2f');
     matlabsave(filename);
 }
