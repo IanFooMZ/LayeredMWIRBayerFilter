@@ -130,6 +130,7 @@ device_mesh['dz'] = mesh_spacing_um * 1e-6
 # General polarized source information
 #
 xy_phi_rotations = [0, 90]
+xy_phi_rotations = [b + src_phi_incidence for b in xy_phi_rotations]
 xy_names = ['x', 'y']
 
 
@@ -463,7 +464,7 @@ for epoch in range(start_epoch, num_epochs):
 
 	start_iter = 0
 	if epoch == start_epoch:
-		start_iter = 11
+		start_iter = 17
 	for iteration in range(start_iter, num_iterations_per_epoch):
 		print("Working on epoch " + str(epoch) + " and iteration " + str(iteration))
 		sys.stdout.flush()
