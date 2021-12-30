@@ -1,23 +1,41 @@
 clear; clc; close all;
-load('ang_range_superimposed_tfsf.mat');
+idcs = strfind(pwd,'\'); mydir = pwd; newdir = mydir(1:idcs(end-1)-1);
+load([newdir,'\','ang_range_superimposed_gauss_phi.mat']);
 
 quadrant = 1;
 legendVals = ["Blue","Green (x-pol.)","Red","Green (y-pol.)"];
+saveFilename = ['just10_angrangesuper_',char(legendVals(quadrant+1)),''];
 
 fig = figure; hold on;
-for xi = [2.5:2.5:10]
-    xline(xi,'--','HandleVisibility','off','Color','#505050' ...
-    ,'LineWidth', 2.0);
+for xi = [2.5:2.5:17.5]
+    xline(xi,'-.','HandleVisibility','off','Color','#505050' ...
+    ,'LineWidth', 1.0);
 end
-fig = addSpec(fig,th0data,quadrant,0);
-fig = addSpec(fig,th2_5data,quadrant,-1);
-fig = addSpec(fig,th5data,quadrant,-1);
-fig = addSpec(fig,th7_5data,quadrant,-2);
-fig = addSpec(fig,th10data,quadrant,-2); 
+realBool = 1;
+% fig = addSpec(fig,th0data,quadrant,0,'');
+fig = addSpec(fig,th0phi0,quadrant,0,'');
+% fig = addSpec(fig,th5phi0,quadrant,0,'; \phi = 0');
+% fig = addSpec(fig,th5phi30,quadrant,0,'; \phi = 30');
+% fig = addSpec(fig,th5phi45,quadrant,0,'; \phi = 45');
+% % fig = addSpec(fig,th5phi60,quadrant,0,'; \phi = 60');
+% fig = addSpec(fig,th5phi90,quadrant,0,'; \phi = 90');
+% fig = addSpec(fig,th5phi180,quadrant,0,'; \phi = 180');
+% fig = addSpec(fig,th5phi225,quadrant,0,'; \phi = 225');
+% fig = addSpec(fig,th5phim30,quadrant,0,'; \phi = -30');
+% fig = addSpec(fig,th5phim45,quadrant,0,'; \phi = -45');
+% fig = addSpec(fig,th5phim90,quadrant,0,'; \phi = -90');
+fig = addSpec(fig,th10phi0,quadrant,0,'; \phi = 0');
+fig = addSpec(fig,th10phi45,quadrant,0,'; \phi = 45');
+fig = addSpec(fig,th10phi90,quadrant,0,'; \phi = 90');
+fig = addSpec(fig,th10phi135,quadrant,0,'; \phi = 135');
+fig = addSpec(fig,th10phi180,quadrant,0,'; \phi = 180');
+fig = addSpec(fig,th10phi225,quadrant,0,'; \phi = 225');
+fig = addSpec(fig,th10phim45,quadrant,0,'; \phi = -45');
+fig = addSpec(fig,th10phim90,quadrant,0,'; \phi = -90');
 
-xlim([0 15]); %ylim([0.15 0.45]);
+xlim([0 17.5]); xticks([0:5:20]); %ylim([0.15 0.45]);
 xlabel('\theta'); ylabel('Sorting Efficiency');
-legend = legend('Location', 'northeast');
+legend = legend('Location', 'southeast');
 title(['Angular Range: ',char(legendVals(quadrant+1))]);
 % set(gcf,'position',[361.0000  226.3333  675.3333  392.6667]);
 set(gcf,'position',[0 0 1920 1440]);
@@ -27,11 +45,17 @@ for i = 1:numel(lines)
   lines(i).LineWidth = 2.0;
   lines(i).MarkerSize = 2.0;
 end
-set(findall(gcf,'-property','FontSize'),'FontSize',16)
+set(findall(gcf,'-property','FontSize'),'FontSize',12)
 
-exportgraphics(gca,['angrangesuper_',char(legendVals(quadrant+1)),'.png']);
+realStr = '';
+if realBool == true
+    realStr = '_real';
+end
 
-function fig = addSpec(fig,struct,quadrant,disp)
+exportgraphics(gca,[saveFilename,realStr,'.png']);
+savefig([saveFilename,realStr,'.fig']);
+
+function fig = addSpec(fig,struct,quadrant,disp,addOnStr)
     fig = ancestor(fig,'figure');
     
     switch quadrant
@@ -46,9 +70,18 @@ function fig = addSpec(fig,struct,quadrant,disp)
     end
     
     h = struct.thetaVals(2) - struct.thetaVals(1);
-    plot(struct.thetaVals+disp*h, specVal ...
-        , 'o-', 'DisplayName', ['Optimized for ',num2str(struct.thetaOrig),'°'] ...
+    
+%     if contains(addOnStr,'135')
+%         specVal = 1.05*specVal;
+%     end
+    
+    plt = plot(struct.thetaVals+disp*h, specVal ...
+        , 'o-', 'DisplayName', ['Optimized for ',num2str(struct.thetaOrig),'°',addOnStr] ...
         , 'MarkerSize',2);
+    if struct.thetaOrig == 0
+        plt.Color = '#BDB4AE';
+        plt.LineStyle = '-.';
+    end
 end
 %% Functions
 function [Emag_processed] = findMax(Emag,peakInd)
