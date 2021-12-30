@@ -4,12 +4,12 @@
 % https://support.lumerical.com/hc/en-us/articles/360034409554
 % https://kx.lumerical.com/t/transforming-datasets-as-structures-to-matlab/2576/5
 clear; clc; close all;
-thetaVals = [36:41];%[0:2:16];
+thetaVals = [10];%[0:2:16];
 
 for k = [1:length(thetaVals)]
     theta = thetaVals(k);
 
-    filename = 'sort_spec_bfast_data_z';
+    filename = 'sort_spec_tfsf_data_th';
     load([filename, num2str(theta),'.mat']);
 
     wlVals = 1e6*E_fm0.lambda;
@@ -43,7 +43,7 @@ for k = [1:length(thetaVals)]
     leg = legend('Location', 'north');
     title(['Spectrum in Each Quadrant, ',num2str(theta),'° incidence']);
     set(gcf,'position',[361.0000  226.3333  675.3333  392.6667]);
-    saveas(fig,['sort_spec_bfast_theta0_z', num2str(theta), '.png']);
+    saveas(fig,['sort_spec_bfast_theta', num2str(theta), '.png']);
     close all;
 
 end

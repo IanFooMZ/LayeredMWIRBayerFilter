@@ -1,23 +1,23 @@
 theta = 10;
 
-for(theta=36; theta<=41; theta=theta+0.5) {
-print("theta is"+num2str(theta));
+for(theta=0; theta<=0; theta=theta+2) {
+#print("theta is"+num2str(theta));
 
-    layoutStatus = layoutmode;
-    if (layoutStatus==1){
-        print("In Layout Mode. Run .fsp first.");
-        }
-    else {
-        print("In Analysis Mode");
-        switchtolayout;
-        }
+    #layoutStatus = layoutmode;
+    #if (layoutStatus==1){
+        #print("In Layout Mode. Run .fsp first.");
+        #}
+    #else {
+        #print("In Analysis Mode");
+        #switchtolayout;
+        #}
     
-    select('angled_forward_src_x');
+    #select('forward_src_x_tfsf');
     #set('angle theta',theta);
-    set('z',theta*1e-6);
-    set('x span',32.5e-6);
-    set('y span',32.5e-6);
-    run;
+    ##set('z',theta*1e-6);
+    #set('x span',33*1e-6);
+    #set('y span',33*1e-6);
+    #run;
         
     E_fm0 = getresult('focal_monitor_0','E');
     E_fm1 = getresult('focal_monitor_1','E');
@@ -29,7 +29,7 @@ print("theta is"+num2str(theta));
     E_tm2 = getresult('transmission_monitor_2','E');
     E_tm3 = getresult('transmission_monitor_3','E');
     
-    E_fp0 = getresult('focal_plane','E');
+    E_fp0 = getresult('transmission_focal_monitor_','E');
     
-    matlabsave('sort_spec_bfast_data_z'+num2str(theta));
+    matlabsave('sort_spec_gaussian_data_th'+num2str(theta));
 }
