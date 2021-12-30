@@ -5,11 +5,11 @@
 % https://kx.lumerical.com/t/transforming-datasets-as-structures-to-matlab/2576/5
 clear; clc; close all;
 thetaOrig = 5;
-% thetaVals = [thetaOrig-0:1.25:thetaOrig+20];
 thetaVals = [thetaOrig-15:1.25:thetaOrig+15];
+% thetaVals = [thetaOrig-15:0.625:thetaOrig+15];
 peakInd = find(thetaVals==thetaOrig);
 sourceConfig = 'gauss';
-dp = 0;
+dp = 3;
 
 file{1} = [pwd,'\'];%,num2str(thetaOrig,'%.1f'),'_inverse_design\'];
 file{2} = 'sortspecdata';
@@ -20,11 +20,12 @@ fn = formFileName(file,thetaOrig,1);%dp);
 
 for k = [1:length(thetaVals)]
     theta = thetaVals(k);
-    if theta<0
-        fn = formFileName(file,ceil(theta),dp);
-    else
-        fn = formFileName(file,floor(theta),dp);
-    end
+%     if theta<0
+%         fn = formFileName(file,ceil(theta),dp);
+%     else
+%         fn = formFileName(file,floor(theta),dp);
+%     end
+    fn = formFileName(file,theta,dp);
     try
         load([fn,'.mat']);
     catch ME
@@ -86,6 +87,8 @@ function fn = formFileName(file,theta,dp)
             thetaStr = num2str(theta,'%.1f');
         case 2
             thetaStr = num2str(theta,'%.2f');
+        case 3
+            thetaStr = num2str(theta,'%.3f');
         otherwise
             thetaStr = num2str(theta,'%d');
     end

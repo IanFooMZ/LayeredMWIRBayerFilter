@@ -9,7 +9,11 @@ thetaOrig = 5;
 thetaVals = [thetaOrig-15:1.25:thetaOrig+15];
 peakInd = find(thetaVals==thetaOrig);
 sourceType = 'gauss';
-dp = 0;
+dp = 3;
+
+idcs = strfind(pwd,'\'); mydir = pwd; newdir = mydir(1:idcs(end)-1);
+saveFileName = [newdir,'\','ang_range_superimposed_',sourceType,'_phi.mat'];
+saveVarName = 'th5phim30';
 
 file{1} = [pwd,'\'];%,num2str(thetaOrig,'%.1f'),'_inverse_design\'];
 file{2} = 'sortspecdata';
@@ -32,11 +36,14 @@ Emag_tm3 = Emag_fp0;
 
 for k = 1:length(thetaVals)
     theta = thetaVals(k);
-    if theta<0
-        fn = formFileName(file,ceil(theta),dp);
-    else
-        fn = formFileName(file,floor(theta),dp);
-    end
+%     if theta<0
+%         fn = formFileName(file,ceil(theta),dp);
+%     else
+%         fn = formFileName(file,floor(theta),dp);
+%     end
+    fn = formFileName(file,theta,dp);
+    %fprintf('theta is %.4f and the filename is %s\n',theta,fn(end-4:end));
+    
     try
         load([fn,'.mat']);
     catch ME
@@ -85,9 +92,8 @@ saveData.Emag_tm1 = Emag_tm1;
 saveData.Emag_tm2 = Emag_tm2;
 saveData.Emag_tm3 = Emag_tm3;
 
-idcs = strfind(pwd,'\'); mydir = pwd; newdir = mydir(1:idcs(end)-1);
-th5len40f30data = saveData; save([newdir,'\','ang_range_superimposed_',sourceType,'_Footprint.mat'] ...
-    ,'th5len40f30data','-append');
+S.(saveVarName) = saveData;
+save(saveFileName,'-struct','S','-append');
 
 Emag_tm0 = Emag_tm0./Emag_tm0(peakInd);
 Emag_tm1 = Emag_tm1./Emag_tm1(peakInd);
@@ -108,10 +114,11 @@ xline(thetaOrig,'-','HandleVisibility','off','Color','#505050' ...
 yline(0.5,'--','HandleVisibility','off','Color','#505050' ...
     ,'LineWidth', 2.0);
 
+realBool = 0;
 intensity = 230;
-plot(thetaVals-0*dth,Emag_tm0,'o-','Color',[0 0 intensity]./255,'DisplayName','Blue');
-plot(thetaVals-1*dth,Emag_tm1,'o-','Color',[0 intensity 0]./255,'DisplayName','Green, x-pol');
-plot(thetaVals+0*dth,Emag_tm2,'o-','Color',[intensity 0 0]./255,'DisplayName','Red');
+plot(thetaVals+0*dth,Emag_tm0,'o-','Color',[0 0 intensity]./255,'DisplayName','Blue');
+plot(thetaVals+0*dth,Emag_tm1,'o-','Color',[0 intensity 0]./255,'DisplayName','Green, x-pol');
+plot(thetaVals-1*dth,Emag_tm2,'o-','Color',[intensity 0 0]./255,'DisplayName','Red');
 % plot(thetaVals,Emag_tm3,'Color',1/255*[40,94,25],'DisplayName','Green,y-pol');
 
 xlabel('Angle of Incidence (°)');
@@ -130,7 +137,12 @@ set(findall(gcf,'-property','FontSize'),'FontSize',16)
 
 %set(gcf,'position',[361.0000  226.3333  675.3333  392.6667]);
 set(gcf,'position',[0 0 1920 1440]);
-exportgraphics(gca,['angrange_th',num2str(thetaOrig),'.png']);
+if realBool==true
+    realStr = '_real';
+else
+    realStr = '';
+end
+exportgraphics(gca,['angrange_th',num2str(thetaOrig),realStr,'.png']);
 
 %% Functions
 function fn = formFileName(file,theta,dp)
@@ -141,6 +153,8 @@ function fn = formFileName(file,theta,dp)
             thetaStr = num2str(theta,'%.1f');
         case 2
             thetaStr = num2str(theta,'%.2f');
+        case 3
+            thetaStr = num2str(theta,'%.3f');
         otherwise
             thetaStr = num2str(theta,'%d');
     end
