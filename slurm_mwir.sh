@@ -1,8 +1,10 @@
 #!/bin/bash
 
 #SBATCH -A Faraon_Computing
-#SBATCH --time=120:00:00
-#SBATCH --nodes=10
+#SBATCH --time=0:10:00
+#SBATCH --nodes=5
+#SBATCH -n=32
+#SBATCH -N=1
 #SBATCH --ntasks-per-node=8
 #SBATCH --qos=normal
 #SBATCH --mem-per-cpu=30G
