@@ -4,7 +4,7 @@
 % https://support.lumerical.com/hc/en-us/articles/360034409554
 % https://kx.lumerical.com/t/transforming-datasets-as-structures-to-matlab/2576/5
 clear; clc; close all;
-thetaOrig = 10;
+thetaOrig = 5;
 %thetaVals = [thetaOrig:1.25:thetaOrig+30];
 thetaVals = [thetaOrig-15:1.25:thetaOrig+15];
 peakInd = find(thetaVals==thetaOrig);
@@ -54,7 +54,7 @@ for k = [1:length(thetaVals)]
 
     %% Plot Sorting Spectrum
     fig = figure; hold on;
-    transPlot = true;
+    transPlot = false;
     intensity = 230;
     if transPlot
         plot(wlVals,Emag_fp0./Emag_ip0,'o-','Color',[0 0 0]./255,'DisplayName','Transmission');
