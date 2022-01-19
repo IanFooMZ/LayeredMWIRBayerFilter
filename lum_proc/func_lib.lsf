@@ -1,0 +1,24 @@
+# Function Declaration
+function create_monitor_nx(name, template){
+# Creates duplicate of template object with name 'name'.
+    try {
+        objExists = getnamed(name,'name');
+    } catch(errMsg);
+    if (objExists != name){
+	   select(template); copy;
+	   # select(template+'_1');   #unnecessary as it's autoselected
+	   set('name',name);
+    } else {
+	select(name);
+	}
+# Note: Do not use exist('objExists'). The code will create an empty None variable called objExists but will still register that variable as existing.
+}
+
+function genResults(monitor,property,sp){
+    mainDataset = getresult(monitor, property);
+    addDataset = mainDataset.getattribute(property);
+    # Lumerical doesn't allow the below to be done in one line
+    power = getresult(monitor,'T'); power = power.T*sp;		
+    
+    return {"vars":mainDataset, "data":addDataset, "power":power};
+}

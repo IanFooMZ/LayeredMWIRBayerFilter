@@ -1,259 +1,190 @@
-
-%% Calculates sorting efficiency for each quadrant
+%% Calculates sorting efficiency spectrum for each quadrant
 % Definition: Fraction of incident power reaching target quadrant
 % References: 
 % https://support.lumerical.com/hc/en-us/articles/360034409554
 % https://kx.lumerical.com/t/transforming-datasets-as-structures-to-matlab/2576/5
+
+%% And then plots it according to the peak sorting efficiency at each angle
 clear; clc; close all;
-thetaOrig = 5;
-%thetaVals = [thetaOrig-0:0.625:thetaOrig+30];
-thetaVals = [thetaOrig-15:0.625:thetaOrig+15];
-peakInd = find(thetaVals==thetaOrig);
-sourceType = 'gauss';
-dp = 3;
+fc = functionsContainer;
+
+%% Sweep Parameters
+%% Only uncomment this block if parameters differ from those in the compileFN.m
+% paramCell = {'th',5,'%.1f',...
+%             'bRad',5,'%.3f'};
+% Format is (variable name, variable start value, format string).
+% Last one is the sweep variable
+% sweepOrig = paramCell{end-1};
+% sweepVals = [sweepOrig-0:2:sweepOrig+40];
+
+%% Generate Corresponding Name of Files
+compileFN;  %addpath(pwd);
 
 idcs = strfind(pwd,'\'); mydir = pwd; newdir = mydir(1:idcs(end)-1);
-saveFileName = [newdir,'\','ang_range_superimposed_',sourceType,'_phi.mat'];
-saveVarName = 'th5phi0';
+compileFileName = [newdir,'\','angRange_superimp',sourceConfig,'_',paramCell{end-2},'.mat'];
+saveVarName = 'th5bRad_test';
+% saveVarName = fc.compileParamStr(paramCell(1:end-3));
+% saveVarName(regexp(saveVarName,'[.,0,_]'))=[];
 
-file{1} = [pwd,'\'];%,num2str(thetaOrig,'%.1f'),'_inverse_design\'];
-file{2} = 'sortspecdata';
-file{4} = ['optang',num2str(thetaOrig,'%.1f'),'_th'];
-file{3} = [sourceType];%,'inSi'];%, '_xpol'];
-fn = formFileName(file,thetaOrig,dp);
+%% Store data for each run in a cell array
+devCell = cell(length(sweepVals),1);
 
-try
-    load([fn,'.mat']);
-catch ME
-    load([fn(1:end-length(file{4})-1),'.mat']);
-end
-wlVals = 1e6*E_fm0.lambda;
-
-Emag_fp0 = zeros(length(thetaVals), length(wlVals));
-Emag_tm0 = Emag_fp0;
-Emag_tm1 = Emag_fp0;
-Emag_tm2 = Emag_fp0;
-Emag_tm3 = Emag_fp0;
-
-for k = 1:length(thetaVals)
-    theta = thetaVals(k);
-%     if theta<0
-%         fn = formFileName(file,ceil(theta),dp);
-%     else
-%         fn = formFileName(file,floor(theta),dp);
-%     end
-    fn = formFileName(file,theta,dp);
-    %fprintf('theta is %.4f and the filename is %s\n',theta,fn(end-4:end));
-    
+%% Main Data-Gathering For Loop
+for m = [1:length(sweepVals)]
+    swp = sweepVals(m); paramCell{end-1} = swp;
+    disp(['(',num2str(m),'/',num2str(length(sweepVals)),')   ',...
+        paramCell{end-2},': ',num2str(swp)]);
+    fn = fc.formFileName(file,paramCell);
     try
         load([fn,'.mat']);
-    catch ME
-        load([fn(1:end-length(file{4})-1),'.mat']);
     end
-    wlVals = 1e6*E_fm0.lambda;
+    wlVals = 1e6*(out.lambda);
+	
+	%% Source Power Spectrum
+    sp = out.sourcepower;
+    %% Central Device Specs (all following measurements are in power)
+    dev0 = struct;
+    dev0.sp = sp;
+    % Reflected from Device
+    dev0.ref = (sp-abs(out.E_stm0.power));
+    % Incident Plane Monitor
+    dev0.P_in = abs(out.E_iam.power);
+    % Power that Misses Device
+    dev0.P_miss = (dev0.sp - dev0.ref) - dev0.P_in;
+    % Side Scattering
+    dev0.sm0 = abs(out.E_sm0.power);
+    dev0.sm1 = abs(out.E_sm1.power);
+    dev0.sm2 = abs(out.E_sm2.power);
+    dev0.sm3 = abs(out.E_sm3.power);
+    % Exit Aperture
+    dev0.P_out = abs(out.E_eam.power);
+    % Power absorbed by Device
+    dev0.abs = (dev0.P_in - dev0.ref - dev0.sm0 - dev0.sm1 - dev0.sm2 - dev0.sm3 - dev0.P_out);
+    % Power hitting Focal Region
+    dev0.P_fp = abs(out.E_fp0.power);
+    % Power in entire FDTD focal plane
+    dev0.P_spill = abs(out.E_sp0.power);
+    % At this point have not added aperture to attenuate power missing the
+    % device yet
     
-    %% Incident Power at Input Aperture
-    Emag_im0(k,:) = integrateOverSpace(E_im0,'E',theta);
-    Emag_ip0(k,:) = integrateOverSpace(E_ip0,'E',theta);
-    
-    %% Overall Incident Power
-    Emag_fp0(k,:) = integrateOverSpace(E_fp0,'E',theta);
+    % Power hitting each focal monitor
+    dev0.P_tm0 = abs(out.E_tm0.power);
+    dev0.P_tm1 = abs(out.E_tm1.power);
+    dev0.P_tm2 = abs(out.E_tm2.power);
+    dev0.P_tm3 = abs(out.E_tm3.power);
 
-    %% Incident Power for Each Quadrant
-    Emag_tm0(k,:) = integrateOverSpace(E_tm0,'E',theta);
-    Emag_tm1(k,:) = integrateOverSpace(E_tm1,'E',theta);
-    Emag_tm2(k,:) = integrateOverSpace(E_tm2,'E',theta);
-    Emag_tm3(k,:) = integrateOverSpace(E_tm3,'E',theta);
-
-%     %% E-Field at Each Focal Monitor
-%     Emag_fm0 = integrateOverSpace(E_fm0,'E',theta);
-%     Emag_fm1 = integrateOverSpace(E_fm1,'E',theta);
-%     Emag_fm2 = integrateOverSpace(E_fm2,'E',theta);
-%     Emag_fm3 = integrateOverSpace(E_fm3,'E',theta);
-
+    devCell{m} = dev0;
 end
+
+%% Collect specific statistics for the entire array of devices in their respective
+%% 2D arrays: (sweepVal, wavelength) are the dimensions
+Parr_ip = fc.extractParamVals(devCell,'P_in');
+Parr_fp = fc.extractParamVals(devCell,'P_fp');
+Parr_spill = fc.extractParamVals(devCell,'P_spill');
+Parr_tm0 = fc.extractParamVals(devCell,'P_tm0');
+Parr_tm1 = fc.extractParamVals(devCell,'P_tm1');
+Parr_tm2 = fc.extractParamVals(devCell,'P_tm2');
+Parr_tm3 = fc.extractParamVals(devCell,'P_tm3');
+
 
 %% Calculate contrast of each bin: defined as the highest intensity bin /
 %% 2nd highest intensity bin
-
-contrast_tm0 = calcContrast(Emag_tm0,Emag_tm1,Emag_tm2,Emag_tm3,peakInd);
-contrast_tm1 = calcContrast(Emag_tm1,Emag_tm0,Emag_tm2,Emag_tm3,peakInd);
-contrast_tm2 = calcContrast(Emag_tm2,Emag_tm1,Emag_tm0,Emag_tm3,peakInd);
-contrast_tm3 = calcContrast(Emag_tm3,Emag_tm1,Emag_tm2,Emag_tm0,peakInd);
-
-
-%% Normalize by focal plane, then take Maximum along wavelength dimension
-%% (designed peak), then normalize 
-% Emag_tm0 = max(Emag_tm0./Emag_fp0,[],2);
-% Emag_tm1 = max(Emag_tm1./Emag_fp0,[],2);
-% Emag_tm2 = max(Emag_tm2./Emag_fp0,[],2);
-% Emag_tm3 = max(Emag_tm3./Emag_fp0,[],2);
-Emag_tm0 = findMax(Emag_tm0./Emag_fp0, peakInd);
-Emag_tm1 = findMax(Emag_tm1./Emag_fp0, peakInd);
-Emag_tm2 = findMax(Emag_tm2./Emag_fp0, peakInd);
-Emag_tm3 = findMax(Emag_tm3./Emag_fp0, peakInd);
+contrast_tm0 = fc.calcContrast(Parr_tm0,Parr_tm1,Parr_tm2,Parr_tm3,peakInd);
+contrast_tm1 = fc.calcContrast(Parr_tm1,Parr_tm0,Parr_tm2,Parr_tm3,peakInd);
+contrast_tm2 = fc.calcContrast(Parr_tm2,Parr_tm1,Parr_tm0,Parr_tm3,peakInd);
+contrast_tm3 = fc.calcContrast(Parr_tm3,Parr_tm1,Parr_tm2,Parr_tm0,peakInd);
 
 
+%% Normalize along focal plane,
+%% Take Maximum along wavelength dimension (designed peak),
+%% Normalize to max. value
+Parr_spill = fc.findMax((Parr_spill-Parr_fp)./(Parr_spill), peakInd);
+Parr_tm0 = fc.findMax(Parr_tm0./Parr_fp, peakInd);
+Parr_tm1 = fc.findMax(Parr_tm1./Parr_fp, peakInd);
+Parr_tm2 = fc.findMax(Parr_tm2./Parr_fp, peakInd);
+Parr_tm3 = fc.findMax(Parr_tm3./Parr_fp, peakInd);
 
-%contrast_tm0 = 
-
+%% Save to Compile File as a Struct
 % Save to struct
-saveData = struct;
-saveData.wlVals = wlVals;
-saveData.peakInd = peakInd;
-saveData.thetaVals = thetaVals;
-saveData.thetaOrig = thetaOrig;
-saveData.Emag_fp0 = Emag_fp0;
-saveData.Emag_tm0 = Emag_tm0;
-saveData.Emag_tm1 = Emag_tm1;
-saveData.Emag_tm2 = Emag_tm2;
-saveData.Emag_tm3 = Emag_tm3;
-saveData.contrast_tm0 = Emag_tm0;
-saveData.contrast_tm1 = Emag_tm1;
-saveData.contrast_tm2 = Emag_tm2;
-saveData.contrast_tm3 = Emag_tm3;
+svData = struct;
+svData.wlVals = wlVals;
+svData.peakInd = peakInd;
+svData.sweepVals = sweepVals;
+svData.paramCell = paramCell;
+svData.Parr_ip = Parr_ip;
+svData.Parr_fp = Parr_fp;
+svData.Parr_spill = Parr_spill;
+svData.Parr_tm0 = Parr_tm0;
+svData.Parr_tm1 = Parr_tm1;
+svData.Parr_tm2 = Parr_tm2;
+svData.Parr_tm3 = Parr_tm3;
+svData.ov = fc.findOffset(peakInd,{Parr_tm0,Parr_tm1,Parr_tm2,Parr_tm3});
 
-S.(saveVarName) = saveData;
-save(saveFileName,'-struct','S','-append');
-%save(saveFileName,'-struct','S');
+S.(saveVarName) = svData;
+if isfile(compileFileName)
+	save(compileFileName,'-struct','S','-append');
+else    save(compileFileName,'-struct','S');
+end
 
-Emag_tm0 = Emag_tm0./Emag_tm0(peakInd);
-Emag_tm1 = Emag_tm1./Emag_tm1(peakInd);
-Emag_tm2 = Emag_tm2./Emag_tm2(peakInd);
-Emag_tm3 = Emag_tm3./Emag_tm3(peakInd);
 
-%% Make it Look Good
-dth = thetaVals(2)-thetaVals(1);
+%% Normalization and Adjustments of Array Values
+Parr_tm0 = Parr_tm0./Parr_tm0(peakInd);
+Parr_tm1 = Parr_tm1./Parr_tm1(peakInd);
+Parr_tm2 = Parr_tm2./Parr_tm2(peakInd);
+Parr_tm3 = Parr_tm3./Parr_tm3(peakInd);
 
-Emag_tm0 = Emag_tm0./max(Emag_tm0);
-Emag_tm1 = Emag_tm1./max(Emag_tm1);
-Emag_tm2 = Emag_tm2./max(Emag_tm2);
+dswp = sweepVals(2)-sweepVals(1);
 
-%% Plot Sorting Spectrum
-fig = figure; hold on;
+Parr_spill = Parr_spill./max(Parr_spill);
+Parr_tm0 = Parr_tm0./max(Parr_tm0);
+Parr_tm1 = Parr_tm1./max(Parr_tm1);
+Parr_tm2 = Parr_tm2./max(Parr_tm2);
+
+
+%% Set up Figure Plotting
+realBool = 0; realStr = ''; ov = zeros(15,1);
+
+% Figure Properties
+fig = figure; ax = gca; hold on;
+xlabel('Angle of Incidence (°)');
+ylabel('Sorting Efficiency (Normalized)');
+xlim([sweepVals(4) sweepVals(end-3)]); 
+ylim([0.4,1.05]);
+legend = legend('Location', 'northeast');
+title(['Angular Range: Optimized at ',num2str(thetaOrig,"%.1f"),'°']);
+
+if realBool
+    realStr = '_real';
+else
+    ov = fc.findOffset(peakInd,{Parr_tm0,Parr_tm1,Parr_tm2});
+end
+sfn = {['angrange', ...
+    fc.compileParamStr(paramCell(1:end-3)),...
+    realStr]};		% Savefile Names
+
 xline(thetaOrig,'-','HandleVisibility','off','Color','#505050' ...
     ,'LineWidth', 2.0);
 yline(0.5,'--','HandleVisibility','off','Color','#505050' ...
     ,'LineWidth', 2.0);
 
-realBool = 1;
-ov = zeros(15,1);
-if ~realBool
-    ov = findOffset(peakInd,{Emag_tm0,Emag_tm1,Emag_tm2});
-end
-
+%% Plot Sorting Spectrum
 intensity = 230;
-plot(thetaVals+ov(1)*dth,Emag_tm0,'o-','Color',[0 0 intensity]./255,'DisplayName','Blue');
-plot(thetaVals+ov(2)*dth,Emag_tm1,'o-','Color',[0 intensity 0]./255,'DisplayName','Green, x-pol');
-plot(thetaVals+ov(3)*dth,Emag_tm2,'o-','Color',[intensity 0 0]./255,'DisplayName','Red');
-% plot(thetaVals,Emag_tm3,'Color',1/255*[40,94,25],'DisplayName','Green,y-pol');
+plot(sweepVals+ov(1)*dswp,Parr_tm0,'o-','Color',[0 0 intensity]./255,'DisplayName','Blue');
+plot(sweepVals+ov(2)*dswp,Parr_tm1,'o-','Color',[0 intensity 0]./255,'DisplayName','Green, x-pol');
+plot(sweepVals+ov(3)*dswp,Parr_tm2,'o-','Color',[intensity 0 0]./255,'DisplayName','Red');
+% plot(sweepVals+ov(4)*dswp,Parr_tm3,'Color',1/255*[40,94,25],'DisplayName','Green,y-pol');
 
-xlabel('Angle of Incidence (°)');
-ylabel('Sorting Efficiency (Normalized)');
-xlim([thetaVals(4) thetaVals(end-3)]); 
-ylim([0.4,1.05]);
-legend = legend('Location', 'northeast');
-title(['Angular Range: Optimized at ',num2str(thetaOrig,"%.1f"),'°']);
 
+% Figure Post-Processing
 lines = findobj(gcf,'Type','Line');
 for i = 1:numel(lines)
   lines(i).LineWidth = 2.0;
   lines(i).MarkerSize = 2.0;
 end
 set(findall(gcf,'-property','FontSize'),'FontSize',16)
-
 %set(gcf,'position',[361.0000  226.3333  675.3333  392.6667]);
 set(gcf,'position',[0 0 1920 1440]);
-if realBool==true
-    realStr = '_real';
-else
-    realStr = '';
-end
-exportgraphics(gca,['angrange_th',num2str(thetaOrig),realStr,'.png']);
-saveas(fig,['angrange_th',num2str(thetaOrig),realStr,'.fig']);
 
-%% Functions
-function fn = formFileName(file,theta,dp)
-    switch dp
-        case 0
-            thetaStr = num2str(theta,'%.0f');
-        case 1
-            thetaStr = num2str(theta,'%.1f');
-        case 2
-            thetaStr = num2str(theta,'%.2f');
-        case 3
-            thetaStr = num2str(theta,'%.3f');
-        otherwise
-            thetaStr = num2str(theta,'%d');
-    end
-
-    fn = [];
-    for i = 1:length(file)
-        if file{i}(end-2:end) == '_th'
-           file{i} = [file{i},thetaStr]; 
-        end
-        
-        if i <= 2
-            fn = [fn,file{i}];
-        else
-            fn = [fn,'_',file{i}];
-        end
-    end
-end
-
-function [offsetVector] = findOffset(peakInd,valueVectors)
-    ind = zeros(length(valueVectors),1);
-
-    for cnt = 1:length(valueVectors)
-        [a, ind(cnt)] = max(valueVectors{cnt});
-        ind(cnt) = peakInd - ind(cnt);
-    end
-    
-    offsetVector = ind;
-end
-
-function [contrast_processed] = calcContrast(Emag_main,Emag_1,Emag_2,Emag_3,peakInd)
-    [a, ind] = max(Emag_main(peakInd,:));
-    Emag_processed_main = Emag_main(:,ind);
-    Emag_processed_1 = Emag_1(:,ind);
-    Emag_processed_2 = Emag_2(:,ind);
-    Emag_processed_3 = Emag_3(:,ind);
-    
-    compressArr = [Emag_processed_1 Emag_processed_2 Emag_processed_3];
-    nextHighestInt = max(compressArr,[],2);
-    
-    contrast_processed = Emag_processed_main./nextHighestInt;
-end
-
-
-function [Emag_processed] = findMax(Emag,peakInd)
-    [a, ind] = max(Emag(peakInd,:));
-    Emag_processed = Emag(:,ind);
-end
-
-function [Emag_lambda] = integrateOverSpace(monitor_name,variable,theta)
-    Emag = magnitudeE(monitor_name,variable);
-    Emag_lambda = squeeze(sum(Emag,1));
-    
-    power_lambda = 0.5*3e8*8.85418782e-12*1*cos(theta)*Emag_lambda.^2;
-end
-
-function [mag_xyz_lambda] = magnitudeE(monitor_name,variable)
-    field = monitor_name.(variable);
-    fieldX = field(:,1,:);
-    fieldY = field(:,2,:);
-    fieldZ = field(:,3,:);
-    mag_xyz_lambda = sqrt(abs(fieldX).^2+abs(fieldY).^2+abs(fieldZ).^2);
-end
-
-function [E_spatial] = reshape_spatial(monitor_name,variable,field_component,wlVal)
-%     component: x,y,z = 1,2,3
-%     wlVal = index in the wavelength value array
-    s1 = length(monitor_name.x);
-    s2 = length(monitor_name.y);
-    s3 = length(monitor_name.z);
-    
-    E = monitor_name.(variable)(:,field_component,wlVal);
-    
-    E_spatial = reshape(E,[s1 s2 s3]);
-end
+exportgraphics(gca,[sfn{1},'.png']);
+saveas(gca,[sfn{1},'.fig']);
+%close all;

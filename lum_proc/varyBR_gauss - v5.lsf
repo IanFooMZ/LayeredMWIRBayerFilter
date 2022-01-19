@@ -1,0 +1,130 @@
+## Access Functions
+func_lib;
+
+## Simulation Setup
+
+# Names for Convenience
+srm = 'src_reflec_monitor';
+stm = 'src_trans_monitor';
+iam = 'incident_aperture_monitor';
+eam = 'exit_aperture_monitor';
+sm = 'side_monitor';
+desImp = 'design_import';
+spm = 'spill_plane_monitor';
+
+# Dimensions to Change Programmatically
+regSz = 90e-6;			# FDTD region size
+stm_dist = 0.5e-6;		# Distance of source transmission monitor from source, to measure reflection from device
+sm_dist = 0.05e-6;		# Distance of power monitor box from device, to measure input and output power from each side
+
+srcPosZ = getnamed('forward_src_x','z');
+devPosX = getnamed(desImp,'x');
+devPosY = getnamed(desImp,'y');
+devPosZ = getnamed(desImp,'z');
+devLenX = getnamed(desImp,'x span');
+devLenY = getnamed(desImp,'y span');
+devLenZ = getnamed(desImp,'z span');
+
+## Create Monitors (NX)
+create_monitor_nx(iam, 'transmission_focal_monitor_');
+#set('z',25.3e-6);
+create_monitor_nx(eam,'transmission_focal_monitor_');
+#set('z',0);
+
+## Change Dimensions Accordingly
+
+# Change Region Size and the size of: Source; Exit Spill Monitor
+setnamed('FDTD',{'x span':regSz,'y span':regSz});
+setnamed(spm,{'x span':regSz,'y span':regSz});
+setnamed('forward_src_x',{'x span':regSz*8/9,'y span':regSz*8/9});
+
+# Source Transmission (and Reflection Monitors) - they should be stm_dist away from the source and be a bit smaller of FDTD region
+# - keep Gaussian width separate, don't change alongside
+#setnamed(srm,{'z':srcPosZ+stm_dist,'x span':regSz*0.95*8/9,'y span':regSz*0.95*8/9});
+setnamed(stm,{'z':srcPosZ-stm_dist,'x span':regSz*0.95*8/9,'y span':regSz*0.95*8/9});
+
+# Box Scattering Monitors - they should be sm_dist away from the device and form a closed box around the device
+setnamed(iam,{'z':devPosZ+devLenZ/2+sm_dist, 'x span':devLenX+sm_dist*2, 'y span':devLenY+sm_dist*2});
+setnamed(eam,{'z':devPosZ-devLenZ/2-sm_dist, 'x span':devLenX+sm_dist*2, 'y span':devLenY+sm_dist*2});
+setnamed(sm+'_0',{'x':devPosX+devLenX/2+sm_dist, 'y span':devLenY+sm_dist*2, 'z span':devLenZ+sm_dist*2});
+setnamed(sm+'_1',{'x':devPosX-devLenX/2-sm_dist, 'y span':devLenY+sm_dist*2, 'z span':devLenZ+sm_dist*2});
+setnamed(sm+'_2',{'y':devPosY+devLenY/2+sm_dist, 'x span':devLenX+sm_dist*2, 'z span':devLenZ+sm_dist*2});
+setnamed(sm+'_3',{'y':devPosY-devLenY/2-sm_dist, 'x span':devLenX+sm_dist*2, 'z span':devLenZ+sm_dist*2});
+
+
+
+
+## Sweep Parameters
+bRadOrig = 39e-6; bRad = bRadOrig;
+thetaOrig = 5; theta = thetaOrig;
+phiOrig = 0; phi = phiOrig;
+sourceType = 'gauss';
+
+# for(theta=thetaOrig; theta<=thetaOrig+30; theta=theta+0.625) {
+# for(theta=thetaOrig-15; theta<=thetaOrig+15; theta=theta+0.625) {
+# for(theta=thetaOrig-0; theta<=thetaOrig-0; theta=theta+0.625) {
+#for(bRad = 5e-6; bRad<=45e-6; bRad=bRad+2e-6){
+for(bRad = 7e-6; bRad<=7e-6; bRad=bRad+2e-6){
+    print("Beam radius is "+num2str(bRad));
+    
+    layoutStatus = layoutmode;
+    if (layoutStatus==1){
+        print("In Layout Mode. Running .fsp...");
+        }
+    else {
+        print("In Analysis Mode");
+        switchtolayout;
+        }
+        
+    #sin_th_prime = getnamed("design_import","index")/getnamed("silicon_substrate","index")*sin(theta*pi/180);
+    sin_th_prime = 1.5/3.43*sin(theta*pi/180);
+    #offset = (getnamed('forward_src_x','z')-getnamed('design_import','z max')+0.2)*tan(theta*pi/180)       # 0.2 is because I put the source slightly below the Si-air interface or there would be reflection issues
+    offset = 11.5*tan(theta*pi/180);
+    offset = offset+1.7*sin_th_prime/sqrt(1-sin_th_prime^2);
+    xOffset = offset*cos(phi*pi/180);
+    yOffset = offset*sin(phi*pi/180);
+    
+    select('forward_src_x');
+    set('angle theta',asin(sin_th_prime)*180/pi);
+    set('angle phi',phi);
+    set('x',xOffset*1e-6);
+    set('y',yOffset*1e-6);
+    #set('z',-1.25*1e-6);
+    #set('x span',33*1e-6);
+    #set('y span',33*1e-6);
+    set('divergence angle', 0.5*(get('wavelength start')+get('wavelength stop'))/(pi*bRad)*180/pi);
+    set('beam radius wz', bRad);
+    run;
+	
+    f = getresult('transmission_focal_monitor_','f');
+    sp = sourcepower(f);
+    out = {
+        'f': f,
+        'lambda': c/f,
+        'sourcepower': sp,  # all Transmission results are normalized against this apparently
+        'E_stm0': genResults(stm,'E',sp),
+        'T_stm0': genResults(stm,'T',sp),
+        'E_iam': genResults(iam,'E',sp),
+        'T_iam': genResults(iam,'T',sp),
+        'E_eam': genResults(eam,'E',sp),
+        'T_eam': genResults(eam,'T',sp),
+        'E_sm0': genResults(sm+'_0','E',sp),
+        'T_sm0': genResults(sm+'_0','T',sp),
+        'E_sm1': genResults(sm+'_1','E',sp),
+        'T_sm1': genResults(sm+'_1','T',sp),
+        'E_sm2': genResults(sm+'_2','E',sp),
+        'T_sm2': genResults(sm+'_2','T',sp),
+        'E_sm3': genResults(sm+'_3','E',sp),
+        'T_sm3': genResults(sm+'_3','T',sp),
+        'E_tm0': genResults('transmission_monitor_0','E',sp),
+        'E_tm1': genResults('transmission_monitor_1','E',sp),
+        'E_tm2': genResults('transmission_monitor_2','E',sp),
+        'E_tm3': genResults('transmission_monitor_3','E',sp),
+        'E_fp0': genResults('transmission_focal_monitor_','E',sp),
+        'E_sp0': genResults('spill_plane_monitor','E',sp)
+        };
+    clear(f, sp);
+    
+    filename = 'sortspecdata_'+sourceType+'_th'+num2str(thetaOrig,'%.1f')+'_bRad'+num2str(bRad*1e6,'%.3f')+'.';
+    matlabsave(filename);
+}

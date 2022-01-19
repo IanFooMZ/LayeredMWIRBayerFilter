@@ -1,0 +1,121 @@
+## Create monitors and edit regions to convert from a single central device,
+## to a 9-device array with associated checks.
+
+## Access Functions
+func_lib;
+
+## Simulation Setup
+
+# Names for Convenience
+srm = 'src_reflec_monitor';
+stm = 'src_trans_monitor';
+iam = 'incident_aperture_monitor';
+eam = 'exit_aperture_monitor';
+sm = 'side_monitor';
+desImp = 'design_import';
+spm = 'spill_plane_monitor';
+sw = 'sidewall';
+
+# Dimensions to Change Programmatically
+regSz = 90e-6;			# FDTD region size
+stm_dist = 0.5e-6;		# Distance of source transmission monitor from source, to measure reflection from device
+sm_dist = 0.05e-6;		# Distance of power monitor box from device, to measure input and output power from each side
+sw_thickness = 0.5e-6;	# Thickness of sidewalls
+
+srcPosZ = getnamed('forward_src_x','z');
+devPosX = getnamed(desImp,'x');
+devPosY = getnamed(desImp,'y');
+devPosZ = getnamed(desImp,'z');
+devLenX = getnamed(desImp,'x span');
+devLenY = getnamed(desImp,'y span');
+devLenZ = getnamed(desImp,'z span');
+
+## Create Monitors (NX)
+create_monitor_nx(iam, 'transmission_focal_monitor_');
+#set('z',25.3e-6);
+create_monitor_nx(eam,'transmission_focal_monitor_');
+#set('z',0);
+create_monitor_nx(spm,'transmission_focal_monitor_');
+setnamed(spm,{'x span':devLenX*3,'y span':devLenY*3});
+create_monitor_nx(stm,'transmission_focal_monitor_');
+create_monitor_nx(sm+'_0','transmission_focal_monitor_');
+setnamed(sm+'_0',{'monitor type':'2D X-normal'});
+create_monitor_nx(sm+'_1',sm+'_0');
+create_monitor_nx(sm+'_2','transmission_focal_monitor_');
+setnamed(sm+'_2',{'monitor type':'2D Y-normal'});
+create_monitor_nx(sm+'_3',sm+'_2');
+
+for(i=1; i<=8; i=i+1){
+    #create_monitor_nx(desImp+'_'+num2str(i),desImp);
+}
+
+try {
+    objExists = getnamed(sw+'_1','name');
+} catch(errMsg);
+if (objExists != sw+'_1'){
+	addrect();set('name',sw+'_1');
+	create_monitor_nx(sw+'_2',sw+'_1');
+	addrect();set('name',sw+'_3');
+	create_monitor_nx(sw+'_4',sw+'_3');
+}
+
+
+## Change Dimensions Accordingly
+
+# Change Region Size and the size of: Source; Exit Spill Monitor
+setnamed('FDTD',{'x span':regSz,'y span':regSz});
+setnamed(spm,{'x span':regSz,'y span':regSz});
+setnamed('forward_src_x',{'x span':regSz*8/9,'y span':regSz*8/9});
+
+# Source Transmission (and Reflection Monitors) - they should be stm_dist away from the source and be a bit smaller of FDTD region
+# - keep Gaussian width separate, don't change alongside
+#setnamed(srm,{'z':srcPosZ+stm_dist,'x span':regSz*0.95*8/9,'y span':regSz*0.95*8/9});
+setnamed(stm,{'z':srcPosZ-stm_dist,'x span':regSz*0.95*8/9,'y span':regSz*0.95*8/9});
+
+# Box Scattering Monitors - they should be sm_dist away from the device and form a closed box around the device
+setnamed(iam,{'z':devPosZ+devLenZ/2+sm_dist, 'x span':devLenX+sm_dist*2, 'y span':devLenY+sm_dist*2});
+setnamed(eam,{'z':devPosZ-devLenZ/2-sm_dist, 'x span':devLenX+sm_dist*2, 'y span':devLenY+sm_dist*2});
+setnamed(sm+'_0',{'x':devPosX+devLenX/2+sm_dist, 'y span':devLenY+sm_dist*2, 'z span':devLenZ+sm_dist*2, 'z':devPosZ});
+setnamed(sm+'_1',{'x':devPosX-devLenX/2-sm_dist, 'y span':devLenY+sm_dist*2, 'z span':devLenZ+sm_dist*2, 'z':devPosZ});
+setnamed(sm+'_2',{'y':devPosY+devLenY/2+sm_dist, 'x span':devLenX+sm_dist*2, 'z span':devLenZ+sm_dist*2, 'z':devPosZ});
+setnamed(sm+'_3',{'y':devPosY-devLenY/2-sm_dist, 'x span':devLenX+sm_dist*2, 'z span':devLenZ+sm_dist*2, 'z':devPosZ});
+
+## Arrange Adjacent Metastructures
+#setnamed(desImp+'_1',{'x':-30e-6,'y':-30e-6});
+#setnamed(desImp+'_2',{'x':0e-6,'y':-30e-6});
+#setnamed(desImp+'_3',{'x':30e-6,'y':-30e-6});
+#setnamed(desImp+'_4',{'x':-30e-6,'y':0e-6});
+#setnamed(desImp+'_5',{'x':30e-6,'y':0e-6});
+#setnamed(desImp+'_6',{'x':-30e-6,'y':30e-6});
+#setnamed(desImp+'_7',{'x':0e-6,'y':30e-6});
+#setnamed(desImp+'_8',{'x':30e-6,'y':30e-6});
+## Disable Adjacent Metastructures
+#for(i=1; i<=8; i=i+1){
+    #setnamed(desImp+'_'+num2str(i),{'enabled':0});
+#}
+
+## Change sizes and thicknesses of sidewalls
+setnamed(sw+'_1',{'x':devPosX+devLenX/2, 'x span': sw_thickness, 'y span':devLenY+sw_thickness*2, 'z span':devLenZ+sw_thickness*2, 'z':devPosZ});
+setnamed(sw+'_2',{'x':devPosX-devLenX/2, 'x span': sw_thickness, 'y span':devLenY+sw_thickness*2, 'z span':devLenZ+sw_thickness*2, 'z':devPosZ});
+setnamed(sw+'_3',{'y':devPosY+devLenY/2, 'y span': sw_thickness, 'x span':devLenX+sw_thickness*2, 'z span':devLenZ+sw_thickness*2, 'z':devPosZ});
+setnamed(sw+'_4',{'y':devPosY-devLenY/2, 'y span': sw_thickness, 'x span':devLenX+sw_thickness*2, 'z span':devLenZ+sw_thickness*2, 'z':devPosZ});
+# Change material of sidewalls
+for(i=1; i<=4; i=i+1){
+    setnamed(sw+'_'+num2str(i),{'material':"Cu (Copper) - Palik"});
+}
+
+# Disable and Enable some other things
+setnamed('design_efield_monitor',{'enabled':0});
+setnamed('silicon_substrate',{'enabled':0});
+setnamed('permittivity_layer_substrate',{'enabled':0});
+setnamed('adj_src_3y',{'enabled':0});
+setnamed('forward_src_x',{'enabled':1});
+
+for(i=0; i<=3; i=i+1){
+    setnamed(sm+'_'+num2str(i),{'enabled':0});
+}
+
+for(i=4; i<=4; i=i+1){
+    #setnamed(sw+'_'+num2str(i),{'enabled':0});
+}
+
