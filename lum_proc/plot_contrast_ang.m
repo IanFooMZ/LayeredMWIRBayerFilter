@@ -5,16 +5,16 @@
 % https://support.lumerical.com/hc/en-us/articles/360034409554
 % https://kx.lumerical.com/t/transforming-datasets-as-structures-to-matlab/2576/5
 clear; clc; close all;
-thetaOrig = 5;
+thetaOrig = 10;
 %thetaVals = [thetaOrig-0:0.625:thetaOrig+30];
 thetaVals = [thetaOrig-15:0.625:thetaOrig+15];
 peakInd = find(thetaVals==thetaOrig);
 sourceType = 'gauss';
 dp = 3;
 
-idcs = strfind(pwd,'\'); mydir = pwd; newdir = mydir(1:idcs(end)-1);
+idcs = strfind(pwd,'\'); mydir = pwd; newdir = mydir(1:idcs(end-1)-1);
 saveFileName = [newdir,'\','ang_range_superimposed_',sourceType,'_phi.mat'];
-saveVarName = 'th5phi0';
+saveVarName = 'th10phi45';
 
 file{1} = [pwd,'\'];%,num2str(thetaOrig,'%.1f'),'_inverse_design\'];
 file{2} = 'sortspecdata';
@@ -136,7 +136,7 @@ xline(thetaOrig,'-','HandleVisibility','off','Color','#505050' ...
 yline(1,'--','HandleVisibility','off','Color','#505050' ...
     ,'LineWidth', 2.0);
 
-realBool = 1;
+realBool = 0;
     ov = zeros(15,1);
 if ~realBool
     ov = findOffset(peakInd,{contrast_tm0,contrast_tm1,contrast_tm2});
