@@ -10,7 +10,7 @@ import numpy as np
 # project_name = 'layered_mwir_2d_lithography_bridges_rgb_10layers_3p5to5p5um_si_fixed_step_addcage_25x25x25um_f30um'
 # project_name = 'layered_mwir_2d_lithography_bridges_rgb_10layers_3p5to5p5um_si_fixed_step_addcage_25x25x25um_f30um'
 # project_name = 'layered_mwir_2d_lithography_bridges_rgb_10layers_3p5to5p5um_si_fixed_step_addcage_30x30x25um_f30um'
-project_name = 'angInc_gaussSrcoutSi_5deg_30phi_layered_mwir_2dlit_bridges_rgb_10layers_3p5to5p5um_si_fixed_step_addcage_30x30x25um_f30um'
+project_name = 'angInc_gaussSrcoutSi_30deg_rWgt13_layered_mwir_2dlit_bridges_rgb_10layers_3p5to5p5um_si_fixed_step_addcage_30x30x25um_f30um'
 
 # todo(gdrobert): consider the contrast here like you are doing in the cmos designs.. minimize energy into wrong quadrant
 
@@ -94,7 +94,7 @@ fdtd_region_minimum_vertical_um = -focal_length_um - vertical_gap_size_um
 fdtd_region_minimum_vertical_voxels = int( np.ceil(fdtd_region_size_vertical_um / mesh_spacing_um) )
 fdtd_region_minimum_lateral_voxels = int( np.ceil(fdtd_region_size_lateral_um / mesh_spacing_um) )
 
-fdtd_simulation_time_fs = 3000
+fdtd_simulation_time_fs = 9000
 
 #
 # Forward Source
@@ -102,8 +102,9 @@ fdtd_simulation_time_fs = 3000
 lateral_aperture_um = 1.1 * device_size_lateral_um
 src_maximum_vertical_um = device_size_verical_um + vertical_gap_size_um * 2. / 3.
 src_minimum_vertical_um = -focal_length_um - 0.5 * vertical_gap_size_um
-src_angle_incidence = 5 # degrees
-src_phi_incidence = 30 # degrees
+src_beam_rad = device_size_lateral_um/2
+src_angle_incidence = 30 # degrees
+src_phi_incidence = 0 # degrees
 
 src_hgt_Si = 1.3
 src_hgt_polymer = src_maximum_vertical_um + 1.5 - device_size_verical_um
@@ -118,7 +119,7 @@ assert ( src_maximum_vertical_um + 1 ) < ( fdtd_region_maximum_vertical_um - sil
 #
 # polarizations_focal_plane_map = [ ['x', 'y'], ['x', 'y'], ['x', 'y'], ['x', 'y'] ]
 polarizations_focal_plane_map = [ ['x', 'y'], ['x'], ['x', 'y'], ['y'] ]
-weight_focal_plane_map = [ 0.5, 1.0, 0.5, 1.0 ]
+weight_focal_plane_map = [ 0.5, 1.0, 0.5, 1.3 ]
 polarization_name_to_idx = { 'x':0, 'y':1, 'z':2 }
 # We are assuming that the data is organized in order of increasing wavelength (i.e. - blue first, red last)
 spectral_focal_plane_map = [
