@@ -11,3 +11,5 @@ MATLAB CODES and PROCESSING WORKFLOW
 4) Run plot_angRange_suprimp.m to load the composed file and plot the side-by-side
 
 MAKE A FOR LOOP FOR ALL THE QUADRANTS
+
+v9: No optimizations were done, simply sweeps of the sidewall material and thickness to understand the ideal range of parameters for which to run simulations.
