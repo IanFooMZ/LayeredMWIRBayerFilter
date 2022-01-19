@@ -5,8 +5,8 @@
 % https://kx.lumerical.com/t/transforming-datasets-as-structures-to-matlab/2576/5
 clear; clc; close all;
 thetaOrig = 5;
+%thetaVals = [thetaOrig:1.25:thetaOrig+30];
 thetaVals = [thetaOrig-15:1.25:thetaOrig+15];
-% thetaVals = [thetaOrig-15:0.625:thetaOrig+15];
 peakInd = find(thetaVals==thetaOrig);
 sourceConfig = 'gauss';
 dp = 3;
@@ -32,7 +32,11 @@ for k = [1:length(thetaVals)]
         load([fn(1:end-length(file{4})-1),'.mat']);
     end
     wlVals = 1e6*E_fm0.lambda;
-
+    
+    %% Incident Power at Input Aperture
+    Emag_im0 = integrateOverSpace(E_im0,'E',theta);
+    Emag_ip0 = integrateOverSpace(E_ip0,'E',theta);
+    
     %% Overall Incident Power
     Emag_fp0 = integrateOverSpace(E_fp0,'E',theta);
 
@@ -43,14 +47,18 @@ for k = [1:length(thetaVals)]
     Emag_tm3 = integrateOverSpace(E_tm3,'E',theta);
 
     %% E-Field at Each Focal Monitor
-    Emag_fm0 = integrateOverSpace(E_fm0,'E',theta);
-    Emag_fm1 = integrateOverSpace(E_fm1,'E',theta);
-    Emag_fm2 = integrateOverSpace(E_fm2,'E',theta);
-    Emag_fm3 = integrateOverSpace(E_fm3,'E',theta);
+%     Emag_fm0 = integrateOverSpace(E_fm0,'E',theta);
+%     Emag_fm1 = integrateOverSpace(E_fm1,'E',theta);
+%     Emag_fm2 = integrateOverSpace(E_fm2,'E',theta);
+%     Emag_fm3 = integrateOverSpace(E_fm3,'E',theta);
 
     %% Plot Sorting Spectrum
     fig = figure; hold on;
+    transPlot = false;
     intensity = 230;
+    if transPlot
+        plot(wlVals,Emag_fp0./Emag_ip0,'o-','Color',[0 0 0]./255,'DisplayName','Transmission');
+    end
     plot(wlVals,Emag_tm0./Emag_fp0,'o-','Color',[0 0 intensity]./255,'DisplayName','Blue');
     plot(wlVals,Emag_tm1./Emag_fp0,'o-','Color',[0 intensity 0]./255,'DisplayName','Green, x-pol');
     plot(wlVals,Emag_tm2./Emag_fp0,'o-','Color',[intensity 0 0]./255,'DisplayName','Red');
@@ -58,8 +66,13 @@ for k = [1:length(thetaVals)]
 
     xlabel('Wavelength (um)');
     ylabel('Sorting Efficiency');
-    ylim([0.1,0.55]);
-    leg = legend('Location', 'north');
+    if transPlot
+        ylim([0.1,0.8]);
+        leg = legend('Location', 'northwest');
+    else
+    	ylim([0.1,0.55]);
+        leg = legend('Location', 'north');
+    end
     title({['Spectrum in Each Quadrant'],['Incident Angle ',num2str(theta) ...
         '°, Optimized for ',num2str(thetaOrig),'°']});
     
@@ -72,8 +85,15 @@ for k = [1:length(thetaVals)]
     %set(gcf,'position',[361.0000  226.3333  675.3333  392.6667]);
     set(gcf,'position',[0 0 1920 1440]);
     
-    exportgraphics(gca,['sortspec_',sourceConfig,'_optang', num2str(thetaOrig) ...
-        ,'_th',num2str(theta),'.png']);
+    if transPlot
+        saveFileName = ['sortspec_',sourceConfig,'_trans_optang', num2str(thetaOrig) ...
+        ,'_th',num2str(theta),'.png'];
+    else
+        saveFileName = ['sortspec_',sourceConfig,'_optang', num2str(thetaOrig) ...
+        ,'_th',num2str(theta),'.png'];
+    end
+    exportgraphics(gca,saveFileName);
+
     close all;
 
 end

@@ -133,27 +133,27 @@ Emag_tm2 = Emag_tm2./max(Emag_tm2);
 fig = figure; hold on;
 xline(thetaOrig,'-','HandleVisibility','off','Color','#505050' ...
     ,'LineWidth', 2.0);
-yline(0.5,'--','HandleVisibility','off','Color','#505050' ...
+yline(1,'--','HandleVisibility','off','Color','#505050' ...
     ,'LineWidth', 2.0);
 
 realBool = 1;
-ov = zeros(15,1);
+    ov = zeros(15,1);
 if ~realBool
-    ov = findOffset(peakInd,{Emag_tm0,Emag_tm1,Emag_tm2});
+    ov = findOffset(peakInd,{contrast_tm0,contrast_tm1,contrast_tm2});
 end
 
 intensity = 230;
-plot(thetaVals+ov(1)*dth,Emag_tm0,'o-','Color',[0 0 intensity]./255,'DisplayName','Blue');
-plot(thetaVals+ov(2)*dth,Emag_tm1,'o-','Color',[0 intensity 0]./255,'DisplayName','Green, x-pol');
-plot(thetaVals+ov(3)*dth,Emag_tm2,'o-','Color',[intensity 0 0]./255,'DisplayName','Red');
-% plot(thetaVals,Emag_tm3,'Color',1/255*[40,94,25],'DisplayName','Green,y-pol');
+plot(thetaVals+ov(1)*dth,contrast_tm0,'o-','Color',[0 0 intensity]./255,'DisplayName','Blue');
+plot(thetaVals+ov(2)*dth,contrast_tm1,'o-','Color',[0 intensity 0]./255,'DisplayName','Green, x-pol');
+plot(thetaVals+ov(3)*dth,contrast_tm2,'o-','Color',[intensity 0 0]./255,'DisplayName','Red');
+% plot(thetaVals,contrast_tm3,'Color',1/255*[40,94,25],'DisplayName','Green,y-pol');
 
 xlabel('Angle of Incidence (°)');
-ylabel('Sorting Efficiency (Normalized)');
+ylabel('Contrast against Next Highest Intensity');
 xlim([thetaVals(4) thetaVals(end-3)]); 
-ylim([0.4,1.05]);
+ylim('auto');
 legend = legend('Location', 'northeast');
-title(['Angular Range: Optimized at ',num2str(thetaOrig,"%.1f"),'°']);
+title(['Angular Contrast: Optimized at ',num2str(thetaOrig,"%.1f"),'°']);
 
 lines = findobj(gcf,'Type','Line');
 for i = 1:numel(lines)
@@ -169,8 +169,8 @@ if realBool==true
 else
     realStr = '';
 end
-exportgraphics(gca,['angrange_th',num2str(thetaOrig),realStr,'.png']);
-saveas(fig,['angrange_th',num2str(thetaOrig),realStr,'.fig']);
+exportgraphics(gca,['contrast_th',num2str(thetaOrig),realStr,'.png']);
+saveas(fig,['contrast_th',num2str(thetaOrig),realStr,'.fig']);
 
 %% Functions
 function fn = formFileName(file,theta,dp)
@@ -211,6 +211,7 @@ function [offsetVector] = findOffset(peakInd,valueVectors)
     
     offsetVector = ind;
 end
+
 
 function [contrast_processed] = calcContrast(Emag_main,Emag_1,Emag_2,Emag_3,peakInd)
     [a, ind] = max(Emag_main(peakInd,:));
