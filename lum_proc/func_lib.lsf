@@ -14,6 +14,43 @@ function create_monitor_nx(name, template){
 # Note: Do not use exist('objExists'). The code will create an empty None variable called objExists but will still register that variable as existing.
 }
 
+function sidewall_mesh_override(swName){
+# Creates a mesh override region based on the structure 'swName'
+    select('mesh_'+swName);
+    delete;
+    addmesh;
+    set('name','mesh_'+swName);
+    setnamed('mesh_'+swName,{'set maximum mesh step':1, 'override x mesh':0, 'override y mesh':0, 'override z mesh':0, 'based on a structure':1});
+    setnamed('mesh_'+swName,{'structure':swName});
+    # Enables fine meshing override in direction where the span is the least - and not in the others
+    if (getnamed(swName,'x span') < getnamed(swName,'y span')){
+        setnamed('mesh_'+swName,{'override x mesh':1});
+        setnamed('mesh_'+swName,{'dx':getnamed(swName,'x span')/5});
+    } else {
+        setnamed('mesh_'+swName,{'override y mesh':1});
+        setnamed('mesh_'+swName,{'dy':getnamed(swName,'y span')/5});
+    }
+}
+
+
+# restrict mesh by defining maximum step size
+set();
+
+function adjustRegionSize(regSz,stm_dist, spm,stm){
+# Adjusts region size and all associated lateral dimensions that must change alongside it.
+    srcPosZ = getnamed('forward_src_x','z');    
+    
+    # Change Region Size and the size of: Source; Exit Spill Monitor
+    setnamed('FDTD',{'x span':regSz,'y span':regSz});
+    setnamed(spm,{'x span':regSz,'y span':regSz});
+    setnamed('forward_src_x',{'x span':regSz*8/9,'y span':regSz*8/9});
+    
+    # Source Transmission (and Reflection Monitors) - they should be stm_dist away from the source and be a bit smaller of FDTD region
+    # - keep Gaussian width separate, don't change alongside
+    #setnamed(srm,{'z':srcPosZ+stm_dist,'x span':regSz*0.95*8/9,'y span':regSz*0.95*8/9});
+    setnamed(stm,{'z':srcPosZ-stm_dist,'x span':regSz*0.95*8/9,'y span':regSz*0.95*8/9});
+}
+
 function genResults(monitor,property,sp){
     mainDataset = getresult(monitor, property);
     addDataset = mainDataset.getattribute(property);
@@ -22,3 +59,4 @@ function genResults(monitor,property,sp){
     
     return {"vars":mainDataset, "data":addDataset, "power":power};
 }
+

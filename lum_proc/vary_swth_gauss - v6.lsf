@@ -1,0 +1,178 @@
+## Access Functions
+func_lib;
+
+## Simulation Setup
+
+# Names for Convenience
+srm = 'src_reflec_monitor';
+stm = 'src_trans_monitor';
+iam = 'incident_aperture_monitor';
+eam = 'exit_aperture_monitor';
+sm = 'side_monitor';
+desImp = 'design_import';
+spm = 'spill_plane_monitor';
+sw = 'sidewall';
+dlm = 'device_lateral_cross_monitor';
+dvm = 'device_vertical_cross_monitor';
+
+# Dimensions to Change Programmatically
+regSz = 51e-6;		# FDTD region size
+sw_th = 10e-6;	        	# Thickness of sidewalls
+stm_dist = 0.5e-6;		# Distance of source transmission monitor from source, to measure reflection from device
+sm_dist_hor = sw_th;	# Horizontal distance of power monitor box from device, to measure input and output power from each side
+sm_dist_ver = 0.2e-6;	# Vertical distance of power monitor box from device, to measure input and output power from each side
+sa_th = 1e-6;           	# Thickness of source aperture
+
+srcPosZ = getnamed('forward_src_x','z');
+devPosX = getnamed(desImp,'x');
+devPosY = getnamed(desImp,'y');
+devPosZ = getnamed(desImp,'z');
+devLenX = getnamed(desImp,'x span');
+devLenY = getnamed(desImp,'y span');
+devLenZ = getnamed(desImp,'z span');
+
+## Create Monitors (NX)
+create_monitor_nx(iam, 'transmission_focal_monitor_');
+#set('z',25.3e-6);
+create_monitor_nx(eam,'transmission_focal_monitor_');
+#set('z',0);
+create_monitor_nx(iam+'_in', iam);
+create_monitor_nx(eam+'_in', eam);
+for(i=0; i<=3; i=i+1){
+    create_monitor_nx(sm+'_in_'+num2str(i),sm+'_'+num2str(i));
+}
+
+create_monitor_nx(dlm, spm);
+create_monitor_nx(dvm, sm+'_1');
+
+## Change Dimensions Accordingly
+
+# Inner Box Scattering Monitors - they should be on the device-sidewall interface and form a closed box around the device
+setnamed(iam+'_in', {'z':devPosZ+devLenZ/2+sm_dist_ver, 'x span':devLenX, 'y span':devLenY});
+setnamed(eam+'_in', {'z':devPosZ-devLenZ/2-sm_dist_ver, 'x span':devLenX, 'y span':devLenY});
+setnamed(sm+'_in_0',{'x':devPosX+devLenX/2, 'y span':devLenY, 'z span':devLenZ+sm_dist_ver*2});
+setnamed(sm+'_in_1',{'x':devPosX-devLenX/2, 'y span':devLenY, 'z span':devLenZ+sm_dist_ver*2});
+setnamed(sm+'_in_2',{'y':devPosY+devLenY/2, 'x span':devLenX, 'z span':devLenZ+sm_dist_ver*2});
+setnamed(sm+'_in_3',{'y':devPosY-devLenY/2, 'x span':devLenX, 'z span':devLenZ+sm_dist_ver*2});
+# Device Cross-Section Monitors
+setnamed(dlm,{'z':devPosZ,'x span':devLenX+sw_th*2,'y span':devLenY+sw_th*2});
+setnamed(dvm,{'x':-devLenX-sw_th/2});
+
+# Change material of sidewalls
+for(i=1; i<=4; i=i+1){
+    setnamed(sw+'_'+num2str(i),{'material':"Pt (Platinum) - Palik"});
+}
+# Add mesh to sidewalls
+# Note: Only if mesh overrides have not been defined!
+for(i=1; i<=4; i=i+1){
+    sidewall_mesh_override(sw+'_'+num2str(i));
+}
+
+
+
+
+## Sweep Parameters
+bRadOrig = devLenX/2; bRad = bRadOrig;
+thetaOrig = 0; theta = thetaOrig;
+phiOrig = 0; phi = phiOrig;
+sourceType = 'gauss';
+
+# for(theta=thetaOrig; theta<=thetaOrig+30; theta=theta+0.625) {
+# for(theta=thetaOrig-15; theta<=thetaOrig+15; theta=theta+0.625) {
+# for(theta=thetaOrig-0; theta<=thetaOrig-0; theta=theta+0.625) {
+#for(bRad = 5e-6; bRad<=45e-6; bRad=bRad+2e-6){
+
+n_idx = 1;
+for(n_idx=1; n_idx<=7; n_idx=n_idx+1){
+    sw_th_swp = 0.1*(1-2.^n_idx)/(1-2)*1e-6;
+    print("Wall thickness is "+num2str(sw_th_swp));
+    
+    layoutStatus = layoutmode;
+    if (layoutStatus==1){
+        print("In Layout Mode. Running .fsp...");
+        }
+    else {
+        print("In Analysis Mode");
+        switchtolayout;
+        }
+        
+    #sin_th_prime = getnamed("design_import","index")/getnamed("silicon_substrate","index")*sin(theta*pi/180);
+    sin_th_prime = 1.5/3.43*sin(theta*pi/180);
+    #offset = (getnamed('forward_src_x','z')-getnamed('design_import','z max')+0.2)*tan(theta*pi/180)       # 0.2 is because I put the source slightly below the Si-air interface or there would be reflection issues
+    offset = 11.5*tan(theta*pi/180);
+    offset = offset+1.7*sin_th_prime/sqrt(1-sin_th_prime^2);
+    xOffset = offset*cos(phi*pi/180);
+    yOffset = offset*sin(phi*pi/180);
+
+    sm_dist = sw_th_swp+0.2e-6;
+    # Adjust region size and all associated lateral dimensions that must change alongside it.
+    adjustRegionSize(devLenX+(sw_th_swp)*2+2e-6, stm_dist, spm,stm);
+	
+    # Change sizes and thicknesses of sidewalls
+    setnamed(sw+'_1',{'x':devPosX+devLenX/2+sw_th_swp/2, 'x span': sw_th_swp, 'y span':devLenY+sw_th_swp*2, 'z span':devLenZ, 'z':devPosZ});
+    setnamed(sw+'_2',{'x':devPosX-devLenX/2-sw_th_swp/2, 'x span': sw_th_swp, 'y span':devLenY+sw_th_swp*2, 'z span':devLenZ, 'z':devPosZ});
+    setnamed(sw+'_3',{'y':devPosY+devLenY/2+sw_th_swp/2, 'y span': sw_th_swp, 'x span':devLenX+sw_th_swp*2, 'z span':devLenZ, 'z':devPosZ});
+    setnamed(sw+'_4',{'y':devPosY-devLenY/2-sw_th_swp/2, 'y span': sw_th_swp, 'x span':devLenX+sw_th_swp*2, 'z span':devLenZ, 'z':devPosZ});
+    # Change sidewall mesh override based on thickness
+    setnamed('mesh_'+sw+'_1',{'dx':sw_th_swp/5});
+    setnamed('mesh_'+sw+'_2',{'dx':sw_th_swp/5});
+    setnamed('mesh_'+sw+'_3',{'dy':sw_th_swp/5});
+    setnamed('mesh_'+sw+'_4',{'dy':sw_th_swp/5});
+    # Change distances of monitor box
+    setnamed(iam,{'z':devPosZ+devLenZ/2+sm_dist_ver, 'x span':devLenX+sm_dist*2, 'y span':devLenY+sm_dist*2});
+    setnamed(eam,{'z':devPosZ-devLenZ/2-sm_dist_ver, 'x span':devLenX+sm_dist*2, 'y span':devLenY+sm_dist*2});
+    setnamed(sm+'_0',{'x':devPosX+devLenX/2+sm_dist, 'y span':devLenY+sm_dist*2, 'z span':devLenZ+sm_dist_ver*2});
+    setnamed(sm+'_1',{'x':devPosX-devLenX/2-sm_dist, 'y span':devLenY+sm_dist*2, 'z span':devLenZ+sm_dist_ver*2});
+    setnamed(sm+'_2',{'y':devPosY+devLenY/2+sm_dist, 'x span':devLenX+sm_dist*2, 'z span':devLenZ+sm_dist_ver*2});
+    setnamed(sm+'_3',{'y':devPosY-devLenY/2-sm_dist, 'x span':devLenX+sm_dist*2, 'z span':devLenZ+sm_dist_ver*2});
+    # Adjust device internal monitors
+    setnamed(dlm,{'z':devPosZ,'x span':devLenX+sw_th_swp*2,'y span':devLenY+sw_th_swp*2,'x':0,'y':0});
+    setnamed(dvm,{'x':-devLenX/2-sw_th_swp/2});
+        
+    
+    select('forward_src_x');
+    set('angle theta',asin(sin_th_prime)*180/pi);
+    set('angle phi',phi);
+    set('x',xOffset*1e-6);
+    set('y',yOffset*1e-6);
+    #set('z',-1.25*1e-6);
+    #set('x span',33*1e-6);
+    #set('y span',33*1e-6);
+    set('divergence angle', 0.5*(get('wavelength start')+get('wavelength stop'))/(pi*bRad)*180/pi);
+    set('beam radius wz', bRad);
+    run;
+	
+    f = getresult('transmission_focal_monitor_','f');
+    sp = sourcepower(f);
+    out = {
+        'f': f,
+        'lambda': c/f,
+        'sourcepower': sp,  # all Transmission results are normalized against this apparently
+        'E_stm0': genResults(stm,'E',sp),
+        #'T_stm0': genResults(stm,'T',sp),
+        'E_iam': genResults(iam,'E',sp),
+        'E_eam': genResults(eam,'E',sp),
+        'E_sm0': genResults(sm+'_0','E',sp),
+        'E_sm1': genResults(sm+'_1','E',sp),
+        'E_sm2': genResults(sm+'_2','E',sp),
+        'E_sm3': genResults(sm+'_3','E',sp),
+        'E_iam_in': genResults(iam+'_in','E',sp),
+        'E_eam_in': genResults(eam+'_in','E',sp),
+        'E_sm0_in': genResults(sm+'_in_0','E',sp),
+        'E_sm1_in': genResults(sm+'_in_1','E',sp),
+        'E_sm2_in': genResults(sm+'_in_2','E',sp),
+        'E_sm3_in': genResults(sm+'_in_3','E',sp),
+        'E_tm0': genResults('transmission_monitor_0','E',sp),
+        'E_tm1': genResults('transmission_monitor_1','E',sp),
+        'E_tm2': genResults('transmission_monitor_2','E',sp),
+        'E_tm3': genResults('transmission_monitor_3','E',sp),
+        'E_fp0': genResults('transmission_focal_monitor_','E',sp),
+        'E_sp0': genResults('spill_plane_monitor','E',sp),
+        'E_dlm': genResults(dlm,'E',sp),
+        'E_dvm': genResults(dvm,'E',sp)
+        };
+    clear(f, sp);
+    
+    filename = 'sortspecdata_'+sourceType+'_th'+num2str(thetaOrig,'%.1f')+'_swTh'+num2str(sw_th_swp*1e6,'%.3f')+'.';
+    #matlabsave(filename);
+}
