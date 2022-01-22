@@ -10,7 +10,7 @@ import numpy as np
 # project_name = 'layered_mwir_2d_lithography_bridges_rgb_10layers_3p5to5p5um_si_fixed_step_addcage_25x25x25um_f30um'
 # project_name = 'layered_mwir_2d_lithography_bridges_rgb_10layers_3p5to5p5um_si_fixed_step_addcage_25x25x25um_f30um'
 # project_name = 'layered_mwir_2d_lithography_bridges_rgb_10layers_3p5to5p5um_si_fixed_step_addcage_30x30x25um_f30um'
-project_name = 'angInc_gaussSrcoutSi_30deg_rWgt13_layered_mwir_2dlit_bridges_rgb_10layers_3p5to5p5um_si_fixed_step_addcage_30x30x25um_f30um'
+project_name = 'angInc_Cu450nm_0deg_src15_layered_mwir_2dlit_bridges_rgb_10layers_3p5to5p5um_si_fixed_step_addcage_30x30x25um_f30um'
 
 # todo(gdrobert): consider the contrast here like you are doing in the cmos designs.. minimize energy into wrong quadrant
 
@@ -47,6 +47,17 @@ device_vertical_maximum_um = device_size_verical_um
 device_vertical_minimum_um = 0
 
 silicon_thickness_um = 3.5
+
+num_sidewalls = 4
+sidewall_thickness_um = 0.45
+sidewall_material = 'Cu (Copper) - Palik'
+sidewall_extend_focalplane = False
+sidewall_x_positions_um = [device_size_lateral_um / 2 + sidewall_thickness_um / 2, 0, -device_size_lateral_um / 2 - sidewall_thickness_um / 2, 0]
+sidewall_y_positions_um = [0, device_size_lateral_um / 2 + sidewall_thickness_um / 2, 0, -device_size_lateral_um / 2 - sidewall_thickness_um / 2]
+sidewall_xspan_positions_um = [sidewall_thickness_um, device_size_lateral_um + sidewall_thickness_um * 2,
+                               sidewall_thickness_um, device_size_lateral_um + sidewall_thickness_um * 2]
+sidewall_yspan_positions_um = [device_size_lateral_um + sidewall_thickness_um * 2, sidewall_thickness_um, 
+                               device_size_lateral_um + sidewall_thickness_um * 2, sidewall_thickness_um]
 
 #
 # Spectral
@@ -103,7 +114,7 @@ lateral_aperture_um = 1.1 * device_size_lateral_um
 src_maximum_vertical_um = device_size_verical_um + vertical_gap_size_um * 2. / 3.
 src_minimum_vertical_um = -focal_length_um - 0.5 * vertical_gap_size_um
 src_beam_rad = device_size_lateral_um/2
-src_angle_incidence = 30 # degrees
+src_angle_incidence = 0 # degrees
 src_phi_incidence = 0 # degrees
 
 src_hgt_Si = 1.3
@@ -119,7 +130,7 @@ assert ( src_maximum_vertical_um + 1 ) < ( fdtd_region_maximum_vertical_um - sil
 #
 # polarizations_focal_plane_map = [ ['x', 'y'], ['x', 'y'], ['x', 'y'], ['x', 'y'] ]
 polarizations_focal_plane_map = [ ['x', 'y'], ['x'], ['x', 'y'], ['y'] ]
-weight_focal_plane_map = [ 0.5, 1.0, 0.5, 1.3 ]
+weight_focal_plane_map = [ 0.5, 1.0, 0.5, 1.0 ]
 polarization_name_to_idx = { 'x':0, 'y':1, 'z':2 }
 # We are assuming that the data is organized in order of increasing wavelength (i.e. - blue first, red last)
 spectral_focal_plane_map = [

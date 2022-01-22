@@ -1,5 +1,6 @@
 import os
 import shutil
+from sunau import AUDIO_FILE_ENCODING_MULAW_8
 import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '.')))
@@ -307,6 +308,9 @@ platform_z_range = 1e-6 * np.linspace( device_vertical_maximum_um, fdtd_region_m
 
 platform_index = np.ones( ( 2, 2, 2 ), dtype=np.complex )
 
+fdtd_hook.select('permittivity_layer_substrate')
+fdtd_hook.set('enabled', 0)
+
 
 silicon_substrate = fdtd_hook.addrect()
 silicon_substrate['name'] = 'silicon_substrate'
@@ -318,6 +322,8 @@ silicon_substrate['z min'] = ( fdtd_region_maximum_vertical_um - silicon_thickne
 # Send this outside the region FDTD and let the source sit inside of it
 silicon_substrate['z max'] = fdtd_region_maximum_vertical_um * 1e-6
 silicon_substrate['material'] = 'Si (Silicon) - Palik'
+fdtd_hook.select('silicon_substrate')
+fdtd_hook.set('enabled', 0)
 
 
 #
@@ -342,6 +348,52 @@ bayer_filter = LayeredMWIRBridgesBayerFilter.LayeredMWIRBridgesBayerFilter(
 bayer_filter_region_x = 1e-6 * np.linspace(-0.5 * device_size_lateral_um, 0.5 * device_size_lateral_um, device_voxels_lateral)
 bayer_filter_region_y = 1e-6 * np.linspace(-0.5 * device_size_lateral_um, 0.5 * device_size_lateral_um, device_voxels_lateral)
 bayer_filter_region_z = 1e-6 * np.linspace(device_vertical_minimum_um, device_vertical_maximum_um, device_voxels_vertical)
+
+#
+# Set up sidewalls on the side to try and attenuate crosstalk
+#
+device_sidewalls = []
+
+for dev_sidewall_idx in range(0, num_sidewalls):
+    device_sidewall = fdtd_hook.addrect()
+    device_sidewall['name'] = 'sidewall_' + str(dev_sidewall_idx)
+    device_sidewall['x'] = sidewall_x_positions_um[dev_sidewall_idx] * 1e-6
+    device_sidewall['x span'] = sidewall_xspan_positions_um[dev_sidewall_idx] * 1e-6
+    device_sidewall['y'] = sidewall_y_positions_um[dev_sidewall_idx] * 1e-6
+    device_sidewall['y span'] = sidewall_yspan_positions_um[dev_sidewall_idx] * 1e-6
+    if sidewall_extend_focalplane:
+        device_sidewall['z min'] = adjoint_vertical_um * 1e-6
+    else:   
+        device_sidewall['z min'] = device_vertical_minimum_um * 1e-6
+    device_sidewall['z max'] = device_vertical_maximum_um * 1e-6
+    device_sidewall['material'] = sidewall_material
+    
+    device_sidewalls.append(device_sidewall)
+
+
+#
+# Apply finer mesh regions restricted to sidewalls
+#
+device_sidewall_meshes = []
+
+for dev_sidewall_idx in range(0, num_sidewalls):
+    device_sidewall_mesh = fdtd_hook.addmesh()
+    device_sidewall_mesh['name'] = 'mesh_sidewall_' + str(dev_sidewall_idx)
+    device_sidewall_mesh['set maximum mesh step'] = 1
+    device_sidewall_mesh['override x mesh'] = 0
+    device_sidewall_mesh['override y mesh'] = 0
+    device_sidewall_mesh['override z mesh'] = 0
+    device_sidewall_mesh['based on a structure'] = 1
+    device_sidewall_mesh['structure'] = device_sidewalls[dev_sidewall_idx]['name']
+    if device_sidewalls[dev_sidewall_idx]['x span'] < device_sidewalls[dev_sidewall_idx]['y span']:
+        device_sidewall_mesh['override x mesh'] = 1
+        device_sidewall_mesh['dx'] = (sidewall_thickness_um / 5) * 1e-6
+    else:
+        device_sidewall_mesh['override y mesh'] = 1
+        device_sidewall_mesh['dy'] = (sidewall_thickness_um / 5) * 1e-6
+
+    device_sidewall_meshes.append(device_sidewall_mesh)
+
 
 #
 # Disable all sources in the simulation, so that we can selectively turn single sources on at a time
