@@ -5,6 +5,7 @@
 #SBATCH --ntasks-per-node=8
 #SBATCH --qos=normal
 #SBATCH --mem-per-cpu=16G
+#SBATCH --comment="Cu sidewalls, 450nm, limited to device"
 #SBATCH --mail-user=ianfoomz@gmail.com
 #SBATCH --mail-type=END
 

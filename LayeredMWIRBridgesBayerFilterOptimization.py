@@ -184,6 +184,9 @@ for xy_idx in range(0, 2):
 	forward_src['beam radius wz'] = 100*1e-6
 	forward_src['divergence angle'] = 3.42365 # degrees
 	forward_src['beam radius wz'] = 15*1e-6
+    # forward_src['divergence angle'] = 0.5 * \
+    #     (lambda_min_um+lambda_max_um)*1e-6/(np.pi*src_beam_rad)*(180/np.pi)
+    # forward_src['beam radius wz'] = src_beam_rad
 
 	forward_sources.append(forward_src)
 
