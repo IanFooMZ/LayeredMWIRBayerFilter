@@ -187,6 +187,7 @@ for xy_idx in range(0, 2):
     # forward_src['divergence angle'] = 0.5 * \
     #     (lambda_min_um+lambda_max_um)*1e-6/(np.pi*src_beam_rad)*(180/np.pi)
     # forward_src['beam radius wz'] = src_beam_rad
+    
 
 	forward_sources.append(forward_src)
 
@@ -836,6 +837,8 @@ for epoch in range(start_epoch, num_epochs):
 		np.save(projects_directory_location + "/max_design_change_evolution.npy", max_design_variable_change_evolution)
 		np.save(projects_directory_location + "/cur_design_variable.npy", cur_design_variable)
 		np.save(projects_directory_location + "/cur_design.npy", cur_design)
+  
+		np.save(python_src_directory + "/cur_design_variable.npy", cur_design_variable)
 
 		#print(cur_design)
 		
